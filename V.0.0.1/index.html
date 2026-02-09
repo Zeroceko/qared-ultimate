@@ -1,535 +1,432 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Qared</title>
-    <style>
-:root {
-    --green: #91FF00;
-    --green-dim: rgba(145, 255, 0, 0.15);
-    --green-mid: rgba(145, 255, 0, 0.3);
-    --blue: #152A32;
-    --blue-light: #1a3440;
-    --blue-lighter: #213d48;
-    --manela: #FFFCEE;
-    --purple: #C9B5FF;
-    --purple-dim: rgba(201, 181, 255, 0.15);
-    --long: #91FF00;
-    --long-bg: rgba(145, 255, 0, 0.12);
-    --short: #FF6B6B;
-    --short-bg: rgba(255, 107, 107, 0.12);
-    --text: #FFFCEE;
-    --text-secondary: rgba(255, 252, 238, 0.55);
-    --text-tertiary: rgba(255, 252, 238, 0.35);
-    --border: rgba(255, 252, 238, 0.08);
-    --border-hover: rgba(255, 252, 238, 0.15);
-    --radius: 14px;
-    --radius-sm: 8px;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-height: 100vh; padding: 16px; color: var(--text); }
-.page-layout { display: flex; max-width: 1360px; margin: 0 auto; gap: 20px; }
-.main-content { flex: 1; min-width: 0; }
-.header { text-align: center; margin-bottom: 20px; }
-.header h1 { font-size: 1.6rem; font-weight: 700; color: var(--manela); letter-spacing: -0.5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-.header p { font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; }
-.leverage-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--green-dim); color: var(--green); border: 1px solid rgba(145,255,0,0.25); padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-top: 10px; }
-.btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 28px; font-size: 0.9rem; font-weight: 700; font-family: 'Bai Jamjuree', sans-serif; color: var(--blue); background: var(--green); border: none; border-radius: var(--radius); cursor: pointer; margin-bottom: 14px; transition: all 0.15s; }
-.btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(145,255,0,0.25); }
-.btn-primary:active { transform: scale(0.98); }
-.btn-primary:disabled { opacity: 0.5; pointer-events: none; }
-.btn-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; backdrop-filter: blur(4px); }
-.modal-overlay.active { display: block; }
-.half-modal { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%) translateY(100%); width: 100%; max-width: 480px; background: var(--blue-light); border-top: 1px solid var(--border); border-radius: 20px 20px 0 0; max-height: 70vh; overflow-y: auto; padding: 20px 16px; z-index: 101; transition: transform 0.3s ease; pointer-events: none; visibility: hidden; }
-.half-modal.active { transform: translateX(-50%) translateY(0); pointer-events: auto; visibility: visible; }
-.half-modal-handle { width: 40px; height: 4px; background: var(--border-hover); border-radius: 2px; margin: 0 auto 16px; }
-.half-modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer; padding: 4px 8px; }
-.loading { text-align: center; color: var(--text-secondary); padding: 30px; }
-.spinner { border: 2px solid var(--border); border-top: 2px solid var(--green); border-radius: 50%; width: 36px; height: 36px; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.coins-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }
-@media (min-width: 640px) { .coins-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 1100px) { .coins-grid { grid-template-columns: repeat(3, 1fr); } }
-.coin-card { background: var(--blue-light); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; position: relative; animation: cardIn 0.35s ease both; transition: border-color 0.2s; }
-.coin-card:hover { border-color: var(--border-hover); }
-.coin-card.high-rr { border-color: var(--purple); box-shadow: 0 0 24px rgba(201,181,255,0.15); }
-.high-rr-badge { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--purple); color: var(--blue); padding: 3px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; white-space: nowrap; z-index: 2; display: flex; align-items: center; gap: 4px; }
-@keyframes cardIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-.coin-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
-.coin-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--blue-lighter); display: flex; align-items: center; justify-content: center; color: var(--green); font-weight: 700; font-size: 0.85rem; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
-.coin-logo { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; object-fit: cover; }
-.coin-name { color: var(--manela); font-size: 0.9rem; font-weight: 600; }
-.coin-symbol { color: var(--text-tertiary); font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; }
-.direction-banner { text-align: center; padding: 8px; border-radius: var(--radius-sm); font-size: 1.1rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: 2px; margin-bottom: 10px; }
-.direction-long { background: var(--long-bg); color: var(--long); border: 1.5px solid rgba(145, 255, 0, 0.3); }
-.direction-short { background: var(--short-bg); color: var(--short); border: 1.5px solid rgba(255, 107, 107, 0.3); }
-.price-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
-.price-cell { background: var(--blue); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 6px; text-align: center; }
-.price-cell-label { font-size: 0.6rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-.price-cell-value { font-size: 0.85rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--manela); }
-.cell-target { border-color: rgba(145, 255, 0, 0.15); }
-.cell-stop { border-color: rgba(255, 107, 107, 0.15); }
-.rr-badge { margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
-.rr-badge.high { background: var(--purple-dim); color: var(--purple); }
-.rr-badge.normal { color: var(--text-tertiary); }
-.confidence-bar { background: rgba(255,252,238,0.06); border-radius: 20px; height: 5px; margin: 8px 0 6px; overflow: hidden; }
-.confidence-fill { height: 100%; border-radius: 20px; transition: width 0.5s ease; background: linear-gradient(90deg, var(--green), var(--purple)); }
-.info-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-secondary); }
-.info-tag { background: rgba(255,252,238,0.06); padding: 2px 7px; border-radius: 6px; font-weight: 600; font-size: 0.7rem; }
-.trend-row { font-size: 0.7rem; color: var(--text-tertiary); margin-top: 4px; font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 6px; }
-.reason-text { font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.3; }
-.watch-btn { position: absolute; top: 12px; right: 12px; background: var(--purple-dim); border: 1px solid rgba(201,181,255,0.25); color: var(--purple); padding: 4px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 600; cursor: pointer; font-family: 'Bai Jamjuree', sans-serif; transition: all 0.15s; display: flex; align-items: center; gap: 4px; }
-.watch-btn:hover { background: rgba(201,181,255,0.25); }
-.watch-btn.watching { background: var(--purple); color: var(--blue); border-color: var(--purple); }
-.entry-btn { width: 100%; padding: 8px; margin-top: 8px; background: transparent; border: 1.5px solid rgba(255,252,238,0.2); color: var(--manela); border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'Bai Jamjuree', sans-serif; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
-.entry-btn:hover { border-color: var(--green); color: var(--green); }
-.entry-btn.entered { background: var(--green-dim); border-color: var(--green); color: var(--green); }
-.watched-section { background: var(--blue-light); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 14px; }
-.watched-section h3 { display: flex; align-items: center; justify-content: space-between; color: var(--manela); font-size: 0.9rem; margin-bottom: 10px; }
-.toggle-watched { background: none; border: none; color: var(--purple); cursor: pointer; font-size: 0.8rem; font-family: 'Bai Jamjuree', sans-serif; padding: 4px 8px; border-radius: 6px; transition: background 0.15s; }
-.toggle-watched:hover { background: var(--purple-dim); }
-.watched-item { background: var(--blue); padding: 10px; border-radius: var(--radius-sm); margin-bottom: 6px; font-size: 0.8rem; border-left: 3px solid var(--purple); }
-.watched-item.target-reached { border-left-color: var(--green); background: rgba(145,255,0,0.05); }
-.watched-item.stop-loss-hit { border-left-color: var(--short); background: rgba(255,107,107,0.05); }
-.watched-item:last-child { margin-bottom: 0; }
-.watched-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-.watched-name { color: var(--manela); font-weight: 600; font-size: 0.8rem; }
-.watched-type { padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-.watched-type.buy { background: var(--long-bg); color: var(--long); }
-.watched-type.sell { background: var(--short-bg); color: var(--short); }
-.watched-info { color: var(--text-secondary); font-size: 0.75rem; line-height: 1.5; font-family: 'JetBrains Mono', monospace; }
-.target-status { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; margin-top: 4px; }
-.remove-btn { background: var(--short-bg); color: var(--short); border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; cursor: pointer; margin-top: 6px; font-family: 'Bai Jamjuree', sans-serif; transition: background 0.15s; display: inline-flex; align-items: center; gap: 4px; }
-.remove-btn:hover { background: rgba(255,107,107,0.25); }
-.sidebar { width: 270px; flex-shrink: 0; position: sticky; top: 16px; height: fit-content; max-height: calc(100vh - 32px); overflow-y: auto; background: var(--blue-light); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
-.sidebar::-webkit-scrollbar { width: 3px; }
-.sidebar::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 3px; }
-.sidebar-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-.sidebar-header h3 { color: var(--manela); font-size: 0.9rem; font-weight: 600; }
-.scale-bar { display: flex; flex-direction: column; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); margin-bottom: 14px; }
-.scale-segment { padding: 7px 10px; display: flex; align-items: center; justify-content: space-between; font-size: 0.7rem; font-weight: 600; }
-.scale-high { background: linear-gradient(90deg, rgba(145,255,0,0.25), rgba(145,255,0,0.12)); color: var(--green); }
-.scale-mid-high { background: linear-gradient(90deg, rgba(201,181,255,0.2), rgba(201,181,255,0.08)); color: var(--purple); }
-.scale-mid { background: linear-gradient(90deg, rgba(255,252,238,0.1), rgba(255,252,238,0.04)); color: var(--manela); }
-.level-card { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border-radius: var(--radius-sm); background: var(--blue); border: 1px solid var(--border); margin-bottom: 8px; transition: border-color 0.15s; }
-.level-card:hover { border-color: var(--border-hover); }
-.level-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
-.level-title { color: var(--manela); font-size: 0.78rem; font-weight: 600; margin-bottom: 2px; }
-.level-range { color: var(--text-tertiary); font-size: 0.65rem; font-family: 'JetBrains Mono', monospace; }
-.level-desc { color: var(--text-secondary); font-size: 0.68rem; line-height: 1.3; margin-bottom: 4px; }
-.level-action { font-size: 0.68rem; font-weight: 600; padding: 2px 6px; border-radius: 5px; display: inline-block; }
-.action-go { background: var(--green-dim); color: var(--green); }
-.action-caution { background: rgba(255,252,238,0.08); color: var(--manela); }
-.level-time { color: var(--text-tertiary); font-size: 0.62rem; font-family: 'JetBrains Mono', monospace; margin-top: 3px; }
-.sidebar-tip { background: var(--green-dim); border: 1px solid rgba(145,255,0,0.15); border-radius: var(--radius-sm); padding: 10px; font-size: 0.68rem; color: var(--green); line-height: 1.4; margin-top: 12px; }
-.sidebar-warning { background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.12); border-radius: var(--radius-sm); padding: 10px; font-size: 0.68rem; color: var(--short); line-height: 1.4; margin-top: 8px; }
-.mobile-only { display: none; }
-.desktop-only { display: block; }
-.toggle-info { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: var(--purple-dim); border: 1px solid rgba(201,181,255,0.15); color: var(--purple); border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600; cursor: pointer; margin-bottom: 14px; font-family: 'Bai Jamjuree', sans-serif; transition: all 0.15s; }
-.toggle-info:hover { background: rgba(201,181,255,0.2); }
-@media (max-width: 899px) { .page-layout { flex-direction: column; } .main-content { max-width: 100%; } .desktop-only { display: none !important; } .mobile-only { display: block; } }
-.disclaimer { background: var(--blue-light); border: 1px solid var(--border); padding: 14px; border-radius: var(--radius); margin-top: 16px; font-size: 0.75rem; color: var(--text-tertiary); text-align: center; line-height: 1.5; }
-.disclaimer strong { color: var(--short); }
-.empty-state { grid-column: 1/-1; text-align: center; padding: 40px 20px; background: var(--blue-light); border: 1px solid var(--border); border-radius: var(--radius); }
-.empty-state h3 { color: var(--purple); margin: 10px 0; font-size: 1rem; }
-.empty-state p { color: var(--text-secondary); font-size: 0.85rem; }
-.mode-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-.mode-preview { background: rgba(255,193,7,0.15); color: #ffc107; }
-.mode-confirmed { background: var(--green-dim); color: var(--green); }
-.warning-tag { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: 600; background: rgba(255,107,107,0.1); color: var(--short); margin-right: 4px; margin-top: 4px; }
-.confirm-btn { width: 100%; padding: 8px; margin-top: 6px; background: rgba(255,193,7,0.12); border: 1.5px solid rgba(255,193,7,0.3); color: #ffc107; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'Bai Jamjuree', sans-serif; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
-.confirm-btn:hover { background: rgba(255,193,7,0.2); border-color: #ffc107; }
-.confirm-btn:disabled { opacity: 0.4; pointer-events: none; }
-.confirm-btn.confirmed { background: var(--green-dim); border-color: var(--green); color: var(--green); }
-.error-banner { background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.2); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 10px; font-size: 0.75rem; color: var(--short); text-align: center; }
-.signal-count { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: rgba(255,252,238,0.06); color: var(--text-secondary); margin-bottom: 10px; font-family: 'JetBrains Mono', monospace; }
-.signal-count strong { color: var(--green); }
-</style>
-    <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Qared</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --green:#91FF00; --green-dim:rgba(145,255,0,.15);
+      --purple:#C9B5FF; --purple-dim:rgba(201,181,255,.15);
+      --blue:#152A32; --blue-light:#1a3440; --blue-lighter:#213d48;
+      --manela:#FFFCEE; --text:#FFFCEE;
+      --text-secondary:rgba(255,252,238,.55);
+      --text-tertiary:rgba(255,252,238,.35);
+      --border:rgba(255,252,238,.08); --border-hover:rgba(255,252,238,.15);
+      --long:#91FF00; --long-bg:rgba(145,255,0,.12);
+      --short:#FF6B6B; --short-bg:rgba(255,107,107,.12);
+      --radius:14px; --radius-sm:8px;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Bai Jamjuree',sans-serif;background:var(--blue);min-height:100vh;padding:16px;color:var(--text)}
+    .page-layout{display:flex;max-width:1360px;margin:0 auto;gap:20px}
+    .main-content{flex:1;min-width:0}
+    .header{text-align:center;margin-bottom:20px}
+    .header h1{font-size:1.6rem;font-weight:700;color:var(--manela);letter-spacing:-.5px}
+    .header p{font-size:.85rem;color:var(--text-secondary);margin-top:4px}
+    .leverage-badge{display:inline-flex;align-items:center;gap:6px;background:var(--green-dim);color:var(--green);border:1px solid rgba(145,255,0,.25);padding:6px 14px;border-radius:20px;font-size:.8rem;font-weight:700;font-family:'JetBrains Mono',monospace;margin-top:10px}
+    .btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 28px;font-size:.9rem;font-weight:700;font-family:'Bai Jamjuree',sans-serif;color:var(--blue);background:var(--green);border:none;border-radius:var(--radius);cursor:pointer;margin-bottom:14px;transition:all .15s}
+    .btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 4px 20px rgba(145,255,0,.25)}
+    .btn-primary:disabled{opacity:.5;pointer-events:none}
+    .toggle-info{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:var(--purple-dim);border:1px solid rgba(201,181,255,.15);color:var(--purple);border-radius:var(--radius-sm);font-size:.8rem;font-weight:600;cursor:pointer;margin-bottom:14px}
+    .toggle-info:hover{background:rgba(201,181,255,.2)}
+    .loading{text-align:center;color:var(--text-secondary);padding:30px}
+    .spinner{border:2px solid var(--border);border-top:2px solid var(--green);border-radius:50%;width:36px;height:36px;animation:spin .8s linear infinite;margin:0 auto 10px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .coins-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
+    @media(min-width:640px){.coins-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(min-width:1100px){.coins-grid{grid-template-columns:repeat(3,1fr)}}
+    .coin-card{background:var(--blue-light);border:1px solid var(--border);border-radius:var(--radius);padding:14px;position:relative;animation:cardIn .35s ease both;transition:border-color .2s}
+    .coin-card:hover{border-color:var(--border-hover)}
+    @keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .coin-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+    .coin-logo{width:32px;height:32px;border-radius:50%;flex-shrink:0;object-fit:cover}
+    .coin-icon{width:32px;height:32px;border-radius:50%;background:var(--blue-lighter);display:flex;align-items:center;justify-content:center;color:var(--green);font-weight:700;font-size:.85rem;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+    .coin-name{color:var(--manela);font-size:.9rem;font-weight:600}
+    .coin-symbol{color:var(--text-tertiary);font-size:.75rem;font-family:'JetBrains Mono',monospace}
+    .mode-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:.65rem;font-weight:700;font-family:'JetBrains Mono',monospace}
+    .mode-preview{background:rgba(255,193,7,.15);color:#ffc107}
+    .mode-confirmed{background:var(--green-dim);color:var(--green)}
+    .direction-banner{text-align:center;padding:8px;border-radius:var(--radius-sm);font-size:1.1rem;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:2px;margin-bottom:10px}
+    .direction-long{background:var(--long-bg);color:var(--long);border:1.5px solid rgba(145,255,0,.3)}
+    .direction-short{background:var(--short-bg);color:var(--short);border:1.5px solid rgba(255,107,107,.3)}
+    .price-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
+    .price-cell{background:var(--blue);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 6px;text-align:center}
+    .price-cell-label{font-size:.6rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+    .price-cell-value{font-size:.85rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--manela)}
+    .cell-target{border-color:rgba(145,255,0,.15)}
+    .cell-stop{border-color:rgba(255,107,107,.15)}
+    .subline{font-size:.65rem;color:var(--text-tertiary);margin-top:3px;line-height:1.2}
+    .confidence-bar{background:rgba(255,252,238,.06);border-radius:20px;height:5px;margin:8px 0 6px;overflow:hidden}
+    .confidence-fill{height:100%;border-radius:20px;transition:width .5s ease;background:linear-gradient(90deg,var(--green),var(--purple))}
+    .info-row{display:flex;justify-content:space-between;align-items:center;font-size:.75rem;color:var(--text-secondary)}
+    .info-tag{background:rgba(255,252,238,.06);padding:2px 7px;border-radius:6px;font-weight:600;font-size:.7rem}
+    .trend-row{font-size:.7rem;color:var(--text-tertiary);margin-top:4px;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:6px}
+    .reason-text{font-size:.75rem;color:var(--text-secondary);margin-top:4px;line-height:1.3}
+    .warning-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:4px;font-size:.6rem;font-weight:600;background:rgba(255,107,107,.1);color:var(--short);margin-right:4px;margin-top:4px}
+    .confirm-btn{width:100%;padding:8px;margin-top:6px;background:rgba(255,193,7,.12);border:1.5px solid rgba(255,193,7,.3);color:#ffc107;border-radius:var(--radius-sm);font-size:.8rem;font-weight:600;cursor:pointer}
+    .confirm-btn:disabled{opacity:.5;pointer-events:none}
+    .entry-btn{width:100%;padding:8px;margin-top:8px;background:transparent;border:1.5px solid rgba(255,252,238,.2);color:var(--manela);border-radius:var(--radius-sm);font-size:.8rem;font-weight:600;cursor:pointer}
+    .entry-btn:hover{border-color:var(--green);color:var(--green)}
+    .entry-btn.entered{background:var(--green-dim);border-color:var(--green);color:var(--green)}
+    .error-banner{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.2);border-radius:var(--radius-sm);padding:10px;margin-bottom:10px;font-size:.75rem;color:var(--short);text-align:center}
+    .signal-count{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:600;background:rgba(255,252,238,.06);color:var(--text-secondary);margin-bottom:10px;font-family:'JetBrains Mono',monospace}
+    .signal-count strong{color:var(--green)}
+    .disclaimer{background:var(--blue-light);border:1px solid var(--border);padding:14px;border-radius:var(--radius);margin-top:16px;font-size:.75rem;color:var(--text-tertiary);text-align:center;line-height:1.5}
+    .disclaimer strong{color:var(--short)}
+    .empty-state{grid-column:1/-1;text-align:center;padding:40px 20px;background:var(--blue-light);border:1px solid var(--border);border-radius:var(--radius)}
+    .empty-state h3{color:var(--purple);margin:10px 0;font-size:1rem}
+    .empty-state p{color:var(--text-secondary);font-size:.85rem}
+  </style>
 </head>
 <body>
-    <div class="page-layout">
-        <div class="main-content">
-            <div class="header">
-                <h1>Qared</h1>
-                <p>BreakoutProp &bull; x20 Kaldıraç &bull; Min %60 Güven</p>
-                <div class="leverage-badge">x20 KALDIRAÇ</div>
-            </div>
-            <div class="btn-row">
-                <button class="btn-primary" id="getBtn">Yeni Öneriler Al</button>
-                <button class="toggle-info" id="toggleInfo">Güven Rehberi</button>
-            </div>
-            <div class="modal-overlay" id="modalOverlay"></div>
-            <div class="half-modal" id="halfModal">
-                <div class="half-modal-handle"></div>
-                <button class="half-modal-close" id="halfModalClose">&times;</button>
-                <div id="halfModalContent"></div>
-            </div>
-            <div id="loading" class="loading" style="display: none;">
-                <div class="spinner"></div>
-                <p>Backend analiz yapılıyor...</p>
-            </div>
-            <div id="errorBanner" class="error-banner" style="display: none;"></div>
-            <div id="signalInfo" class="signal-count" style="display: none;"></div>
-            <div id="watchedSection" class="watched-section" style="display: none;">
-                <h3>
-                    <span>Takip Edilenler (<span id="watchedCount">0</span>)</span>
-                    <button class="toggle-watched" id="toggleWatched">Göster</button>
-                </h3>
-                <div id="watchedList" style="display: none;"></div>
-            </div>
-            <div id="coins" class="coins-grid"></div>
-            <div class="disclaimer">
-                <strong>ÇOK YÜKSEK RİSK!</strong> x20 kaldıraç kullanımı son derece risklidir. 
-                %1 ters hareket tüm yatırımınızı %20 eritebilir. Bu uygulama eğitim amaçlıdır, 
-                yatırım tavsiyesi değildir. Gerçek para ile kaldıraçlı işlem yapmadan önce 
-                mutlaka profesyonel danışmanlık alın.
-            </div>
-            <div style="text-align:center;padding:12px 0 4px;font-size:0.6rem;color:var(--text-tertiary);">Qared v0.3.0</div>
-        </div>
-        <aside class="sidebar" id="sidebar" style="display:none;">
-            <div class="sidebar-header"><h3>Güven Rehberi</h3></div>
-            <div class="sidebar-scale">
-                <div class="scale-bar">
-                    <div class="scale-segment scale-high"><span class="scale-label">85</span></div>
-                    <div class="scale-segment scale-mid-high"><span class="scale-label">75</span></div>
-                    <div class="scale-segment scale-mid"><span class="scale-label">68</span></div>
-                </div>
-            </div>
-            <div class="sidebar-levels">
-                <div class="level-card"><div class="level-dot" style="background:#10b981;"></div><div class="level-info"><div class="level-title">Yüksek <span class="level-range">%75-85</span></div><div class="level-desc">Trend + momentum uyumlu, güçlü volatilite</div><div class="level-action action-go">Güvenle gir, normal stop loss</div><div class="level-time">15-45 dk</div></div></div>
-                <div class="level-card"><div class="level-dot" style="background:#f59e0b;"></div><div class="level-info"><div class="level-title">Orta-Yüksek <span class="level-range">%68-77</span></div><div class="level-desc">Güçlü momentum, trend uyumlu</div><div class="level-action action-go">Gir, stop loss'u sıkı tut</div><div class="level-time">30-60 dk</div></div></div>
-                <div class="level-card"><div class="level-dot" style="background:#f97316;"></div><div class="level-info"><div class="level-title">Orta <span class="level-range">%60-70</span></div><div class="level-desc">Sinyal var ama dikkatli ol</div><div class="level-action action-caution">Gir ama küçük pozisyon, sıkı stop</div><div class="level-time">30-90 dk</div></div></div>
-            </div>
-            <div class="sidebar-tip"><strong>İpucu:</strong> Ekranda gördüğün her sinyal girilebilir kalitede. Fark, pozisyon boyutunda ve stop loss sıkılığında.</div>
-            <div class="sidebar-warning">%75+ güven çok NADİRDİR. Çoğu sinyal %60-70 arası olacak.</div>
-        </aside>
+  <div class="page-layout">
+    <div class="main-content">
+      <div class="header">
+        <h1>Qared</h1>
+        <p>BreakoutProp &bull; x20 Kaldıraç &bull; Min %60 Güven</p>
+        <div class="leverage-badge">x20 KALDIRAÇ</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="getBtn">Yeni Öneriler Al</button>
+        <button class="toggle-info" id="toggleInfo">Güven Rehberi</button>
+      </div>
+
+      <div id="loading" class="loading" style="display:none;">
+        <div class="spinner"></div>
+        <p>Backend analiz yapılıyor...</p>
+      </div>
+
+      <div id="errorBanner" class="error-banner" style="display:none;"></div>
+      <div id="signalInfo" class="signal-count" style="display:none;"></div>
+
+      <div id="coins" class="coins-grid"></div>
+
+      <div class="disclaimer">
+        <strong>ÇOK YÜKSEK RİSK!</strong> x20 kaldıraç kullanımı son derece risklidir.
+        %1 ters hareket tüm yatırımınızı %20 eritebilir. Bu uygulama eğitim amaçlıdır, yatırım tavsiyesi değildir.
+      </div>
+
+      <div style="text-align:center;padding:12px 0 4px;font-size:.6rem;color:var(--text-tertiary);">Qared v0.3.1</div>
     </div>
+  </div>
 
-    <script>
-        // ===== CONFIG =====
-        const API_BASE = '/.netlify/functions/trade-bot';
-        const MAX_SIGNALS = 5; // Gösterilecek maksimum sinyal sayısı
+  <script>
+    // ===== CONFIG =====
+    var API_BASE = '/.netlify/functions/trade-bot';
+    var MAX_SIGNALS = 5;
+    var LEVERAGE = 20;
 
-        const COIN_LOGOS = {
-            'BTCUSDT':'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
-            'ETHUSDT':'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
-            'SOLUSDT':'https://assets.coingecko.com/coins/images/4128/small/solana.png',
-            'XRPUSDT':'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
-            'ADAUSDT':'https://assets.coingecko.com/coins/images/975/small/cardano.png',
-            'DOGEUSDT':'https://assets.coingecko.com/coins/images/5/small/dogecoin.png',
-            'AVAXUSDT':'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png',
-            'LINKUSDT':'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png',
-            'BNBUSDT':'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png',
-            'TONUSDT':'https://assets.coingecko.com/coins/images/17980/small/ton_symbol.png',
-            'SUIUSDT':'https://assets.coingecko.com/coins/images/26375/small/sui_asset.jpeg',
-            'APTUSDT':'https://assets.coingecko.com/coins/images/26455/small/aptos_round.png',
-            'ARBUSDT':'https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-29_21.47.00.jpeg',
-            'NEARUSDT':'https://assets.coingecko.com/coins/images/10365/small/near.jpg',
-            'INJUSDT':'https://assets.coingecko.com/coins/images/12882/small/Secondary_Symbol.png',
-            'PEPEUSDT':'https://assets.coingecko.com/coins/images/29850/small/pepe-token.jpeg',
-            'SEIUSDT':'https://assets.coingecko.com/coins/images/28205/small/Sei_Logo_-_Transparent.png',
-            'ETCUSDT':'https://assets.coingecko.com/coins/images/453/small/ethereum-classic-logo.png',
-            'AAVEUSDT':'https://assets.coingecko.com/coins/images/12645/small/AAVE.png',
-            'ATOMUSDT':'https://assets.coingecko.com/coins/images/1481/small/cosmos_hub.png',
-            'DOTUSDT':'https://assets.coingecko.com/coins/images/12171/small/polkadot.png',
-            'LTCUSDT':'https://assets.coingecko.com/coins/images/2/small/litecoin.png',
-            'MATICUSDT':'https://assets.coingecko.com/coins/images/4713/small/polygon.png',
-            'FILUSDT':'https://assets.coingecko.com/coins/images/12817/small/filecoin.png',
-            'OPUSDT':'https://assets.coingecko.com/coins/images/25244/small/Optimism.png',
-            'TRXUSDT':'https://assets.coingecko.com/coins/images/1094/small/tron-logo.png',
-        };
-        const COIN_NAMES = {
-            'BTCUSDT':'Bitcoin','ETHUSDT':'Ethereum','SOLUSDT':'Solana','XRPUSDT':'XRP',
-            'ADAUSDT':'Cardano','DOGEUSDT':'Dogecoin','AVAXUSDT':'Avalanche','LINKUSDT':'Chainlink',
-            'BNBUSDT':'BNB','TONUSDT':'Toncoin','SUIUSDT':'Sui','APTUSDT':'Aptos',
-            'ARBUSDT':'Arbitrum','NEARUSDT':'NEAR','INJUSDT':'Injective','PEPEUSDT':'Pepe',
-            'SEIUSDT':'Sei','ETCUSDT':'Ethereum Classic','AAVEUSDT':'Aave','ATOMUSDT':'Cosmos',
-            'DOTUSDT':'Polkadot','LTCUSDT':'Litecoin','MATICUSDT':'Polygon','FILUSDT':'Filecoin',
-            'OPUSDT':'Optimism','TRXUSDT':'TRON',
-        };
+    // Basit logo/name map (istersen genişlet)
+    var COIN_LOGOS = {
+      'BTCUSDT':'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
+      'ETHUSDT':'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+      'SOLUSDT':'https://assets.coingecko.com/coins/images/4128/small/solana.png',
+      'BNBUSDT':'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png',
+      'XRPUSDT':'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
+      'ADAUSDT':'https://assets.coingecko.com/coins/images/975/small/cardano.png',
+      'AVAXUSDT':'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png',
+      'DOGEUSDT':'https://assets.coingecko.com/coins/images/5/small/dogecoin.png',
+      'LINKUSDT':'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png',
+      'TONUSDT':'https://assets.coingecko.com/coins/images/17980/small/ton_symbol.png',
+      'MATICUSDT':'https://assets.coingecko.com/coins/images/4713/small/polygon.png',
+      'OPUSDT':'https://assets.coingecko.com/coins/images/25244/small/Optimism.png',
+      'ARBUSDT':'https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-29_21.47.00.jpeg',
+      'ATOMUSDT':'https://assets.coingecko.com/coins/images/1481/small/cosmos_hub.png',
+      'LTCUSDT':'https://assets.coingecko.com/coins/images/2/small/litecoin.png',
+      'ETCUSDT':'https://assets.coingecko.com/coins/images/453/small/ethereum-classic-logo.png',
+      'NEARUSDT':'https://assets.coingecko.com/coins/images/10365/small/near.jpg',
+      'APTUSDT':'https://assets.coingecko.com/coins/images/26455/small/aptos_round.png',
+      'INJUSDT':'https://assets.coingecko.com/coins/images/12882/small/Secondary_Symbol.png',
+      'SEIUSDT':'https://assets.coingecko.com/coins/images/28205/small/Sei_Logo_-_Transparent.png'
+    };
+    var COIN_NAMES = {
+      'BTCUSDT':'Bitcoin','ETHUSDT':'Ethereum','SOLUSDT':'Solana','BNBUSDT':'BNB','XRPUSDT':'XRP',
+      'ADAUSDT':'Cardano','AVAXUSDT':'Avalanche','DOGEUSDT':'Dogecoin','LINKUSDT':'Chainlink','TONUSDT':'Toncoin',
+      'MATICUSDT':'Polygon','OPUSDT':'Optimism','ARBUSDT':'Arbitrum','ATOMUSDT':'Cosmos','LTCUSDT':'Litecoin',
+      'ETCUSDT':'Ethereum Classic','NEARUSDT':'NEAR','APTUSDT':'Aptos','INJUSDT':'Injective','SEIUSDT':'Sei'
+    };
 
-        // ===== SIMÜLASYON VERİLERİ (önizleme için) =====
-        const MOCK_SIGNALS = [
-            { symbol:'BTCUSDT', mode:'CONFIRMED', direction:'LONG', confidence:78, entryRefPrice:69452.02, tpPrice:71180.50, slPrice:68300.00, meta:{rr:2.0,price_precision:2}, reasons:['UPTREND_RSI_OK','TREND=UP','MOM=STRONG','ATR_TPSL'], warnings:[] },
-            { symbol:'ETHUSDT', mode:'PREVIEW', direction:'SHORT', confidence:72, entryRefPrice:2854.25, tpPrice:2720.40, slPrice:2943.60, meta:{rr:1.5,price_precision:2}, reasons:['RSI_OVERBOUGHT_IN_UPTREND','TREND=UP','MOM=MED','ATR_TPSL'], warnings:['FUNDING_RATE_HIGH'] },
-            { symbol:'SOLUSDT', mode:'PREVIEW', direction:'LONG', confidence:65, entryRefPrice:142.35, tpPrice:149.80, slPrice:137.38, meta:{rr:1.5,price_precision:2}, reasons:['SIDE_BULL_BIAS','TREND=SIDE','MOM=WEAK','ATR_TPSL'], warnings:[] },
-            { symbol:'XRPUSDT', mode:'CONFIRMED', direction:'SHORT', confidence:75, entryRefPrice:2.4820, tpPrice:2.3150, slPrice:2.5930, meta:{rr:1.5,price_precision:4}, reasons:['DOWNTREND_RSI_OK','TREND=DOWN','MOM=STRONG','ATR_TPSL'], warnings:['LIQ_INTENSITY_MED','LIQ_ALIGNS_WITH_SIGNAL'] },
-            { symbol:'DOGEUSDT', mode:'PREVIEW', direction:'LONG', confidence:63, entryRefPrice:0.0959, tpPrice:0.1012, slPrice:0.0918, meta:{rr:1.3,price_precision:4}, reasons:['SIDE_BULL_BIAS','TREND=SIDE','MOM=WEAK','ATR_TPSL'], warnings:['FUNDING_RATE_HIGH'] },
-        ];
+    // ===== DOM =====
+    var btn = document.getElementById('getBtn');
+    var loading = document.getElementById('loading');
+    var coins = document.getElementById('coins');
+    var errorBanner = document.getElementById('errorBanner');
+    var signalInfo = document.getElementById('signalInfo');
+    var toggleInfo = document.getElementById('toggleInfo');
 
-        // ===== DOM =====
-        const btn=document.getElementById('getBtn'),loading=document.getElementById('loading'),coins=document.getElementById('coins'),errorBanner=document.getElementById('errorBanner'),signalInfo=document.getElementById('signalInfo'),toggleInfo=document.getElementById('toggleInfo'),modalOverlay=document.getElementById('modalOverlay'),halfModal=document.getElementById('halfModal'),halfModalContent=document.getElementById('halfModalContent'),halfModalClose=document.getElementById('halfModalClose'),watchedSection=document.getElementById('watchedSection'),watchedList=document.getElementById('watchedList'),toggleWatched=document.getElementById('toggleWatched'),watchedCount=document.getElementById('watchedCount');
-        let watchedPositions=JSON.parse(localStorage.getItem('watchedPositions')||'[]');
+    // ===== HELPERS =====
+    function showError(msg){
+      errorBanner.textContent = msg;
+      errorBanner.style.display = 'block';
+      setTimeout(function(){ errorBanner.style.display = 'none'; }, 8000);
+    }
 
-        // ===== MODAL =====
-        function openHalfModal(){const s=document.getElementById('sidebar');if(s)halfModalContent.innerHTML=s.innerHTML;modalOverlay.classList.add('active');halfModal.classList.add('active');}
-        function closeHalfModal(){modalOverlay.classList.remove('active');halfModal.classList.remove('active');}
-        if(toggleInfo)toggleInfo.addEventListener('click',openHalfModal);
-        if(halfModalClose)halfModalClose.addEventListener('click',closeHalfModal);
-        if(modalOverlay)modalOverlay.addEventListener('click',closeHalfModal);
-        if(toggleWatched)toggleWatched.addEventListener('click',()=>{if(watchedList.style.display==='none'){watchedList.style.display='block';toggleWatched.textContent='Gizle';}else{watchedList.style.display='none';toggleWatched.textContent='Göster';}});
+    function formatPrice(p, precision){
+      if(p == null || !isFinite(p)) return '—';
+      if(precision != null && isFinite(precision)){
+        var d = Math.max(0, Math.min(8, Math.round(precision)));
+        return Number(p).toFixed(d);
+      }
+      p = Number(p);
+      if(p >= 10000) return p.toFixed(0);
+      if(p >= 100) return p.toFixed(1);
+      if(p >= 1) return p.toFixed(2);
+      if(p >= 0.01) return p.toFixed(4);
+      return p.toFixed(6);
+    }
 
-        // ===== HELPERS =====
-        function formatPrice(p,precision){
-            if(!p||!Number.isFinite(p))return'—';
-            if(precision!=null&&Number.isFinite(precision)){
-                const d=Math.max(0,Math.min(8,Math.round(precision)));
-                return p.toFixed(d);
+    function smartPrecision(p){
+      if(!p || p<=0) return 2;
+      if(p>=1000) return 0;
+      if(p>=100) return 1;
+      if(p>=1) return 2;
+      if(p>=0.01) return 4;
+      return 6;
+    }
+
+    function symbolToTicker(s){
+      return String(s).replace(/USDT$/,'').replace(/BUSD$/,'').replace(/USDC$/,'').replace(/FDUSD$/,'').replace(/TUSD$/,'');
+    }
+
+    function getConfLabel(c){
+      if(c>=75) return 'Yüksek';
+      if(c>=68) return 'Orta-Yüksek';
+      if(c>=60) return 'Orta';
+      return 'Düşük';
+    }
+
+    function getTimeEst(c){
+      if(c>=75) return '15-45 dk';
+      if(c>=68) return '30-60 dk';
+      return '30-90 dk';
+    }
+
+    function warningsToTR(arr){
+      if(!arr || !arr.length) return [];
+      var m = {
+        'LIQ_INTENSITY_HIGH':'🔴 Yoğun likidasyon baskısı',
+        'LIQ_INTENSITY_MED':'🟠 Orta likidasyon baskısı',
+        'LIQ_INTENSITY_LOW':'🟡 Hafif likidasyon',
+        'LIQ_ALIGNS_WITH_SIGNAL':'✅ Likidasyon sinyalle uyumlu',
+        'FUNDING_SOON_HIGH_RATE':'⏰ Funding ücreti yaklaşıyor',
+        'FUNDING_RATE_HIGH':'💰 Funding oranı yüksek (pozisyon tutma maliyetli)'
+      };
+      return arr.map(function(x){ return m[x] || x; });
+    }
+
+    // ===== API (async/await YOK) =====
+    function fetchSignals(mode){
+      mode = mode || 'intrabar';
+      return fetch(API_BASE + '?mode=' + encodeURIComponent(mode))
+        .then(function(r){
+          return r.json().then(function(d){
+            if(!r.ok || !d || !d.ok){
+              var em = (d && (d.error || d.message)) || ('HTTP ' + r.status);
+              throw new Error(em);
             }
-            if(p>=10000)return p.toFixed(0);
-            if(p>=100)return p.toFixed(1);
-            if(p>=1)return p.toFixed(2);
-            if(p>=0.01)return p.toFixed(4);
-            return p.toFixed(6);
-        }
-        function smartPrecision(p){if(!p||p<=0)return 2;if(p>=1000)return 0;if(p>=100)return 1;if(p>=1)return 2;if(p>=0.01)return 4;return 6;}
-        function symbolToTicker(s){return s.replace(/USDT$/,'').replace(/BUSD$/,'').replace(/USDC$/,'').replace(/FDUSD$/,'').replace(/TUSD$/,'');}
-        function getConfLabel(c){if(c>=75)return'Yüksek';if(c>=68)return'Orta-Yüksek';if(c>=60)return'Orta';return'Düşük';}
-        function getTimeEst(c){if(c>=75)return'15-45 dk';if(c>=68)return'30-60 dk';return'30-90 dk';}
-
-        function reasonsToText(reasons){
-            if(!reasons||!reasons.length)return'';
-            const map={'UPTREND_RSI_OK':'Yükseliş trendi, RSI uyumlu','DOWNTREND_RSI_OK':'Düşüş trendi, RSI uyumlu','RSI_OVERBOUGHT_IN_UPTREND':'Aşırı alım, dönüş bekleniyor','RSI_OVERSOLD_IN_DOWNTREND':'Aşırı satım, toparlanma bekleniyor','SIDE_BULL_BIAS':'Yatay piyasa, boğa eğilimli','SIDE_BEAR_BIAS':'Yatay piyasa, ayı eğilimli'};
-            const tR=reasons.find(r=>r.startsWith('TREND='));const mR=reasons.find(r=>r.startsWith('MOM='));const main=reasons.find(r=>map[r]);
-            const parts=[];
-            if(tR){const t=tR.split('=')[1];parts.push({'UP':'Yukarı','DOWN':'Aşağı','SIDE':'Yatay'}[t]||t);}
-            if(mR){const m=mR.split('=')[1];parts.push({'STRONG':'Güçlü','MED':'Orta','WEAK':'Zayıf'}[m]||m);}
-            if(main)parts.push(map[main]);
-            return parts.join(' · ')||reasons.slice(0,2).join(' · ');
-        }
-        function warningsToTR(w){
-            if(!w||!w.length)return[];
-            const m={
-                'LIQ_INTENSITY_HIGH':'🔴 Yoğun likidasyon baskısı',
-                'LIQ_INTENSITY_MED':'🟠 Orta likidasyon baskısı',
-                'LIQ_INTENSITY_LOW':'🟡 Hafif likidasyon',
-                'LIQ_ALIGNS_WITH_SIGNAL':'✅ Likidasyon sinyalle uyumlu',
-                'FUNDING_SOON_HIGH_RATE':'⏰ Funding ücreti yaklaşıyor',
-                'FUNDING_RATE_HIGH':'💰 Funding oranı yüksek (pozisyon tutma maliyetli)'
-            };
-            return w.map(x=>m[x]||x);
-        }
-        function showError(msg){errorBanner.textContent=msg;errorBanner.style.display='block';setTimeout(()=>{errorBanner.style.display='none';},8000);}
-
-        // ===== API =====
-        async function fetchSignals(mode='intrabar'){
-            const r=await fetch(`${API_BASE}?mode=${mode}`);
-            const d=await r.json();
-            if(!d.ok)throw new Error(d.error||'Backend hatası');
             return d;
-        }
-        async function requestConfirm(symbol){
-            const r=await fetch(`${API_BASE}?mode=wait_close`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol})});
-            return await r.json();
-        }
-
-        // ===== ANA FONKSİYON =====
-        btn.addEventListener('click',getSignals);
-
-        async function getSignals(){
-            btn.disabled=true;loading.style.display='block';coins.innerHTML='';errorBanner.style.display='none';signalInfo.style.display='none';
-            try{
-                const data=await fetchSignals('intrabar');
-                let signals=data.signals||[];
-                if(data.errors&&data.errors.length)console.warn('⚠️ Backend hataları:',data.errors);
-
-                // Güvene göre sırala ve max 5 göster
-                signals.sort((a,b)=>(b.confidence||0)-(a.confidence||0));
-                const total=signals.length;
-                signals=signals.slice(0,MAX_SIGNALS);
-
-                if(signals.length===0){
-                    coins.innerHTML=`<div class="empty-state"><div style="font-size:3rem;margin-bottom:10px;">📊</div><h3>Şu An Yeni Öneri Yok</h3><p>Tüm coinler ya cooldown'da ya da %60 altı güven seviyesinde.</p><p style="color:var(--text-tertiary);font-size:0.8rem;margin-top:8px;">${data.ms?`Analiz: ${data.ms}ms`:''} ${data.errors?.length?`· ${data.errors.length} hata`:''}</p></div>`;
-                } else {
-                    signalInfo.innerHTML=`<strong>${signals.length}</strong> / ${total} sinyal gösteriliyor (en yüksek güven) · ${data.ms?`${(data.ms/1000).toFixed(1)}s`:''}`;
-                    signalInfo.style.display='inline-flex';
-                    displaySignals(signals);
-                }
-            }catch(error){
-                console.error('❌ API Hatası:',error);showError('API Hatası: '+error.message);
-                coins.innerHTML=`<div class="empty-state"><div style="font-size:3rem;margin-bottom:10px;">⚠️</div><h3>Bağlantı Hatası</h3><p>${error.message}</p><p style="color:var(--text-tertiary);font-size:0.8rem;margin-top:8px;">Backend'in çalıştığından ve env variable'ların doğru olduğundan emin olun.</p></div>`;
-            }finally{loading.style.display='none';btn.disabled=false;}
-        }
-
-        // ===== KART RENDER =====
-        function displaySignals(signals){
-            coins.innerHTML='';
-            signals.forEach((sig,i)=>{
-                if(!sig||sig.mode==='INVALIDATED'||sig.mode==='ERROR')return;
-                const card=document.createElement('div');
-                const isLong=sig.direction==='LONG';
-                const ticker=symbolToTicker(sig.symbol);
-                const coinName=COIN_NAMES[sig.symbol]||ticker;
-                const logo=COIN_LOGOS[sig.symbol]||'';
-                const conf=sig.confidence;
-                const confLabel=getConfLabel(conf);
-                const timeEst=getTimeEst(conf);
-                const rr=sig.meta?.rr||0;
-                const isHighRR=rr>=2.0;
-                const entry=sig.entryRefPrice;
-                const tp=sig.tpPrice;
-                const sl=sig.slPrice;
-                const pp=sig.meta?.price_precision!=null?Number(sig.meta.price_precision):smartPrecision(entry);
-                const profitPct=entry>0?Math.abs((tp-entry)/entry*100):0;
-                const lossPct=entry>0?Math.abs((sl-entry)/entry*100):0;
-                const profitLev=Math.round(profitPct*20);
-                const lossLev=Math.round(lossPct*20);
-                const reasonText=reasonsToText(sig.reasons);
-                const warnings=warningsToTR(sig.warnings);
-                const isPreview=sig.mode==='PREVIEW';
-                const isConfirmed=sig.mode==='CONFIRMED';
-
-                const tR=(sig.reasons||[]).find(r=>r.startsWith('TREND='));
-                const mR=(sig.reasons||[]).find(r=>r.startsWith('MOM='));
-                const trendTR={'UP':'Yukarı','DOWN':'Aşağı','SIDE':'Yatay'}[tR?tR.split('=')[1]:'']||'';
-                const momTR={'STRONG':'Güçlü','MED':'Orta','WEAK':'Zayıf'}[mR?mR.split('=')[1]:'']||'';
-
-                card.className=`coin-card ${isHighRR?'high-rr':''}`;
-                card.style.animationDelay=`${i*0.08}s`;
-                const uid=`${i}_${Date.now()}`;
-                const watchId=`w${uid}`,entryId=`e${uid}`,confirmId=`c${uid}`;
-
-                card.innerHTML=`
-                    ${isHighRR?`<div class="high-rr-badge">⭐ R/R ${rr.toFixed(1)}:1</div>`:''}
-                    <button class="watch-btn" id="${watchId}">Takip</button>
-                    <div class="coin-header">
-                        ${logo?`<img class="coin-logo" src="${logo}" alt="${ticker}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="coin-icon" style="display:none">${ticker.charAt(0)}</div>`:`<div class="coin-icon">${ticker.charAt(0)}</div>`}
-                        <div>
-                            <div class="coin-name">${coinName}</div>
-                            <div class="coin-symbol">${ticker} <span class="mode-badge ${isPreview?'mode-preview':'mode-confirmed'}">${isPreview?'PREVIEW':isConfirmed?'CONFIRMED':sig.mode}</span></div>
-                        </div>
-                    </div>
-                    <div class="direction-banner ${isLong?'direction-long':'direction-short'}">${isLong?'▲ LONG':'▼ SHORT'}</div>
-                    <div class="price-grid">
-                        <div class="price-cell">
-                            <div class="price-cell-label">Şu Anki Fiyat</div>
-                            <div class="price-cell-value">$${formatPrice(entry,pp)}</div>
-                            <div style="font-size:0.65rem;color:var(--text-tertiary);">giriş ref.</div>
-                        </div>
-                        <div class="price-cell cell-target">
-                            <div class="price-cell-label">Hedef Fiyat</div>
-                            <div class="price-cell-value" style="color:var(--green);">$${formatPrice(tp,pp)}</div>
-                            <div style="font-size:0.65rem;color:var(--green);opacity:0.8;">%${profitLev} kar</div>
-                        </div>
-                        <div class="price-cell cell-stop">
-                            <div class="price-cell-label">Stop Loss</div>
-                            <div class="price-cell-value" style="color:var(--short);">$${formatPrice(sl,pp)}</div>
-                            <div style="font-size:0.65rem;color:var(--short);opacity:0.8;">-%${lossLev} zarar</div>
-                        </div>
-                    </div>
-                    ${isHighRR?`<div class="rr-badge high">R/R: ${rr.toFixed(1)}:1</div>`:`<div class="rr-badge normal">R/R: ${rr.toFixed(1)}:1</div>`}
-                    <div class="confidence-bar"><div class="confidence-fill" style="width:${conf}%"></div></div>
-                    <div class="info-row"><span class="info-tag">${timeEst}</span><span style="font-size:1rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:${conf>=75?'var(--green)':conf>=68?'var(--purple)':'var(--text-secondary)'};">%${conf} <span style="font-size:0.7rem;font-weight:500;opacity:0.7;">${confLabel}</span></span></div>
-                    <div class="trend-row">${trendTR} · ${momTR}</div>
-                    <div class="reason-text">${reasonText}</div>
-                    ${warnings.length?`<div style="margin-top:4px;">${warnings.map(w=>`<span class="warning-tag">⚠ ${w}</span>`).join('')}</div>`:''}
-                    ${isPreview?`<button class="confirm-btn" id="${confirmId}" title="Sinyal henüz onaylanmadı. Bu butona basarak mum kapandığında tekrar kontrol edilmesini isteyebilirsin.">⏳ Mum Kapanışında Teyit Et</button>`:''}
-                    <button class="entry-btn" id="${entryId}">Pozisyona Girdim</button>
-                `;
-                coins.appendChild(card);
-
-                // Event listeners
-                document.getElementById(watchId).addEventListener('click',function(){
-                    if(this.classList.contains('watching'))return;
-                    addToWatch(sig);this.classList.add('watching');this.textContent='✓ Takipte';
-                });
-                document.getElementById(entryId).addEventListener('click',function(){
-                    if(this.classList.contains('entered'))return;
-                    const wb=document.getElementById(watchId);
-                    if(!wb.classList.contains('watching')){addToWatch(sig);wb.classList.add('watching');wb.textContent='✓ Takipte';}
-                    this.classList.add('entered');this.textContent='✓ Pozisyondayım';
-                });
-                if(isPreview){
-                    const cb=document.getElementById(confirmId);
-                    if(cb){cb.addEventListener('click',async function(){
-                        this.disabled=true;this.textContent='Teyit bekleniyor...';
-                        try{
-                            const res=await requestConfirm(sig.symbol);
-                            if(res.ok&&res.result?.ok){this.classList.add('confirmed');this.textContent='✓ Teyit isteği gönderildi';}
-                            else{this.textContent='✗ '+(res.result?.reason||'Hata');setTimeout(()=>{this.disabled=false;this.textContent='Tekrar Dene';},3000);}
-                        }catch(e){this.textContent='✗ Bağlantı hatası';setTimeout(()=>{this.disabled=false;this.textContent='Tekrar Dene';},3000);}
-                    });}
-                }
-            });
-        }
-
-        // ===== TAKİP SİSTEMİ =====
-        function addToWatch(sig){
-            const now=new Date(),ticker=symbolToTicker(sig.symbol);
-            watchedPositions.push({
-                name:COIN_NAMES[sig.symbol]||ticker,symbol:ticker,fullSymbol:sig.symbol,
-                type:sig.direction==='LONG'?'buy':'sell',
-                entryPrice:sig.entryRefPrice,currentPrice:sig.entryRefPrice,
-                target:sig.tpPrice,stopLoss:sig.slPrice,
-                confidence:getConfLabel(sig.confidence),confidencePercent:sig.confidence,
-                timeEstimate:getTimeEst(sig.confidence),
-                addedAt:now.toISOString(),
-                addedDate:now.toLocaleDateString('tr-TR'),
-                addedTime:now.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),
-                finalized:false,finalStatus:null,mode:sig.mode
-            });
-            localStorage.setItem('watchedPositions',JSON.stringify(watchedPositions));
-            updateWatchedSection();
-        }
-
-        async function updateWatchedPrices(){
-            if(!watchedPositions.length)return;
-            try{
-                const r=await fetch('https://api.binance.com/api/v3/ticker/price');
-                if(r.ok){
-                    const d=await r.json();
-                    watchedPositions.forEach(p=>{
-                        if(p.finalized)return;
-                        for(const pair of[p.symbol+'USDT',p.symbol+'BUSD',p.symbol+'USDC']){
-                            const t=d.find(x=>x.symbol===pair);
-                            if(t){p.currentPrice=parseFloat(t.price);break;}
-                        }
-                    });
-                    localStorage.setItem('watchedPositions',JSON.stringify(watchedPositions));
-                }
-            }catch(e){console.error('Fiyat güncelleme hatası:',e);}
-        }
-
-        function updateWatchedSection(){
-            watchedCount.textContent=watchedPositions.length;
-            if(!watchedPositions.length){watchedSection.style.display='none';return;}
-            watchedSection.style.display='block';watchedList.innerHTML='';
-            watchedPositions.forEach((pos,idx)=>{
-                const item=document.createElement('div');
-                const cp=pos.currentPrice,tp=pos.target,ep=pos.entryPrice;
-                let tr=false,slh=false;
-                if(!pos.finalized){
-                    if(pos.type==='buy'){tr=cp>=tp;slh=cp<=pos.stopLoss;}else{tr=cp<=tp;slh=cp>=pos.stopLoss;}
-                    if(tr){pos.finalized=true;pos.finalStatus='tp';pos.finalPrice=cp;pos.finalTime=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});localStorage.setItem('watchedPositions',JSON.stringify(watchedPositions));}
-                    else if(slh){pos.finalized=true;pos.finalStatus='sl';pos.finalPrice=cp;pos.finalTime=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});localStorage.setItem('watchedPositions',JSON.stringify(watchedPositions));}
-                }else{tr=pos.finalStatus==='tp';slh=pos.finalStatus==='sl';}
-                const dp=pos.finalized?pos.finalPrice:cp;
-                const pcp=((dp-ep)/ep*100);const plev=pcp*20;
-                const pp=smartPrecision(ep);
-                item.className=`watched-item ${tr?'target-reached':''} ${slh?'stop-loss-hit':''}`;
-                let st='Devam ediyor...',sc='#ffc107';
-                if(slh){st='STOP LOSS VURDU!';sc='#dc3545';}else if(tr){st='HEDEF ULAŞILDI!';sc='#28a745';}else if(pos.type==='buy'?dp<ep:dp>ep){st='Ters yönde';sc='#ff9800';}
-                const ti=pos.addedDate?`${pos.addedDate} ${pos.addedTime}`:'';
-                item.innerHTML=`<div class="watched-header"><span class="watched-name">${pos.name} (${pos.symbol})</span><span class="watched-type ${pos.type}">${pos.type==='buy'?'LONG':'SHORT'} %${pos.confidencePercent||'?'}</span></div><div class="watched-info">${ti?`<span style="font-size:0.65rem;color:var(--text-tertiary);">${ti}</span><br>`:''}Giriş: $${formatPrice(ep,pp)} → ${pos.finalized?'Kapanış':'Şu an'}: $${formatPrice(dp,pp)}<br>Hedef: $${formatPrice(tp,pp)} · Stop: $${formatPrice(pos.stopLoss,pp)}<br>Kar/Zarar: ${plev>=0?'+':''}${plev.toFixed(1)}% (x20)${pos.finalized&&pos.finalTime?`<br><span style="font-size:0.65rem;color:var(--text-tertiary);">Kapandı: ${pos.finalTime}</span>`:''}<br><span class="target-status" style="background:${sc};color:#fff;">${st}</span></div><button class="remove-btn" onclick="removeWatched(${idx})">Kaldır</button>`;
-                watchedList.appendChild(item);
-            });
-        }
-        window.removeWatched=function(i){watchedPositions.splice(i,1);localStorage.setItem('watchedPositions',JSON.stringify(watchedPositions));updateWatchedSection();};
-
-        // ===== BAŞLANGIÇ =====
-        updateWatchedSection();
-        updateWatchedPrices();
-        setInterval(()=>{updateWatchedPrices().then(()=>{if(watchedList.style.display!=='none')updateWatchedSection();});},30000);
-
-        // Sayfa yüklenince SİMÜLASYON verilerini göster (otomatik API çağrısı YOK)
-        window.addEventListener('load',()=>{
-            signalInfo.innerHTML=`<strong>5</strong> / 5 simülasyon sinyali gösteriliyor · <span style="color:var(--purple);">Gerçek veri için "Yeni Öneriler Al" butonuna basın</span>`;
-            signalInfo.style.display='inline-flex';
-            displaySignals(MOCK_SIGNALS);
+          });
         });
-    </script>
+    }
+
+    function requestConfirm(symbol){
+      return fetch(API_BASE + '?mode=wait_close', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ symbol: symbol })
+      }).then(function(r){ return r.json(); });
+    }
+
+    // ===== UI RENDER =====
+    function displaySignals(signals){
+      coins.innerHTML = '';
+      signals.forEach(function(sig, i){
+        if(!sig || sig.mode==='INVALIDATED' || sig.mode==='ERROR') return;
+
+        var isLong = sig.direction === 'LONG';
+        var ticker = symbolToTicker(sig.symbol);
+        var coinName = COIN_NAMES[sig.symbol] || ticker;
+        var logo = COIN_LOGOS[sig.symbol] || '';
+        var conf = Number(sig.confidence || 0);
+        var confLabel = getConfLabel(conf);
+        var timeEst = getTimeEst(conf);
+        var rr = sig.meta && sig.meta.rr ? Number(sig.meta.rr) : 0;
+        var entry = Number(sig.entryRefPrice);
+        var tp = Number(sig.tpPrice);
+        var sl = Number(sig.slPrice);
+        var pp = (sig.meta && sig.meta.price_precision != null) ? Number(sig.meta.price_precision) : smartPrecision(entry);
+
+        // Unlevered move (%)
+        var tpMovePct = entry>0 ? ((tp-entry)/entry*100) : 0;
+        var slMovePct = entry>0 ? ((sl-entry)/entry*100) : 0;
+
+        // Leveraged approx PnL (%), magnitude only. Yönü LONG/SHORT’a göre UI’da +/- basacağız.
+        var levTp = Math.abs(tpMovePct) * LEVERAGE;
+        var levSl = Math.abs(slMovePct) * LEVERAGE;
+
+        var isPreview = sig.mode === 'PREVIEW';
+        var warnings = warningsToTR(sig.warnings || []);
+
+        var card = document.createElement('div');
+        card.className = 'coin-card';
+        card.style.animationDelay = (i*0.08) + 's';
+
+        var uid = String(i) + '_' + String(Date.now());
+        var confirmId = 'c' + uid;
+
+        card.innerHTML =
+          '<div class="coin-header">' +
+            (logo
+              ? '<img class="coin-logo" src="'+logo+'" alt="'+ticker+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+                '<div class="coin-icon" style="display:none">'+ticker.charAt(0)+'</div>'
+              : '<div class="coin-icon">'+ticker.charAt(0)+'</div>') +
+            '<div>' +
+              '<div class="coin-name">'+coinName+'</div>' +
+              '<div class="coin-symbol">'+ticker+' ' +
+                '<span class="mode-badge '+(isPreview?'mode-preview':'mode-confirmed')+'">'+(isPreview?'PREVIEW':'CONFIRMED')+'</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="direction-banner '+(isLong?'direction-long':'direction-short')+'">'+(isLong?'▲ LONG':'▼ SHORT')+'</div>' +
+
+          '<div class="price-grid">' +
+            '<div class="price-cell">' +
+              '<div class="price-cell-label">Şu Anki Fiyat</div>' +
+              '<div class="price-cell-value">$'+formatPrice(entry,pp)+'</div>' +
+              '<div class="subline">giriş ref.</div>' +
+            '</div>' +
+            '<div class="price-cell cell-target">' +
+              '<div class="price-cell-label">Hedef (TP)</div>' +
+              '<div class="price-cell-value" style="color:var(--green);">$'+formatPrice(tp,pp)+'</div>' +
+              '<div class="subline">' +
+                (tpMovePct>=0?'+':'') + tpMovePct.toFixed(2) + '% hareket · ' +
+                '<span style="color:var(--green);opacity:.9;">≈+'+levTp.toFixed(1)+'% (x'+LEVERAGE+')</span>' +
+              '</div>' +
+            '</div>' +
+            '<div class="price-cell cell-stop">' +
+              '<div class="price-cell-label">Stop (SL)</div>' +
+              '<div class="price-cell-value" style="color:var(--short);">$'+formatPrice(sl,pp)+'</div>' +
+              '<div class="subline">' +
+                (slMovePct>=0?'+':'') + slMovePct.toFixed(2) + '% hareket · ' +
+                '<span style="color:var(--short);opacity:.9;">≈-'+levSl.toFixed(1)+'% (x'+LEVERAGE+')</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="confidence-bar"><div class="confidence-fill" style="width:'+conf+'%"></div></div>' +
+          '<div class="info-row">' +
+            '<span class="info-tag">'+timeEst+'</span>' +
+            '<span style="font-size:1rem;font-weight:700;font-family:\'JetBrains Mono\',monospace;">%'+conf+
+              ' <span style="font-size:.7rem;font-weight:500;opacity:.7;">'+confLabel+'</span>' +
+            '</span>' +
+          '</div>' +
+
+          (warnings.length
+            ? '<div style="margin-top:6px;">'+warnings.map(function(w){
+                return '<span class="warning-tag">⚠ '+w+'</span>';
+              }).join('')+'</div>'
+            : '') +
+
+          (isPreview
+            ? '<button class="confirm-btn" id="'+confirmId+'">⏳ Mum Kapanışında Teyit Et</button>'
+            : '') +
+
+          '<button class="entry-btn" data-enter="'+uid+'">Pozisyona Girdim</button>';
+
+        coins.appendChild(card);
+
+        if(isPreview){
+          var cb = document.getElementById(confirmId);
+          if(cb){
+            cb.addEventListener('click', function(){
+              var self = this;
+              self.disabled = true;
+              self.textContent = 'Teyit bekleniyor...';
+              requestConfirm(sig.symbol).then(function(res){
+                if(res && res.ok && res.result && res.result.ok){
+                  self.textContent = '✓ Teyit isteği gönderildi';
+                }else{
+                  self.textContent = '✗ ' + ((res && res.result && res.result.reason) ? res.result.reason : 'Hata');
+                  setTimeout(function(){ self.disabled=false; self.textContent='Tekrar Dene'; }, 2500);
+                }
+              }).catch(function(){
+                self.textContent = '✗ Bağlantı hatası';
+                setTimeout(function(){ self.disabled=false; self.textContent='Tekrar Dene'; }, 2500);
+              });
+            });
+          }
+        }
+      });
+    }
+
+    function renderEmpty(data){
+      coins.innerHTML =
+        '<div class="empty-state">' +
+          '<div style="font-size:3rem;margin-bottom:10px;">📊</div>' +
+          '<h3>Şu An Yeni Öneri Yok</h3>' +
+          '<p>Tüm coinler cooldown’da olabilir ya da %60 altı güven üretmiştir.</p>' +
+          '<p style="color:var(--text-tertiary);font-size:.8rem;margin-top:8px;">' +
+            (data && data.ms ? ('Analiz: '+data.ms+'ms ') : '') +
+            (data && data.errors && data.errors.length ? ('· '+data.errors.length+' hata') : '') +
+          '</p>' +
+        '</div>';
+    }
+
+    // ===== MAIN =====
+    function getSignals(){
+      btn.disabled = true;
+      loading.style.display = 'block';
+      coins.innerHTML = '';
+      errorBanner.style.display = 'none';
+      signalInfo.style.display = 'none';
+
+      fetchSignals('intrabar')
+        .then(function(data){
+          var signals = (data && data.signals) ? data.signals.slice() : [];
+          signals.sort(function(a,b){ return (Number(b.confidence||0) - Number(a.confidence||0)); });
+          var total = signals.length;
+          signals = signals.slice(0, MAX_SIGNALS);
+
+          if(!signals.length){
+            renderEmpty(data);
+            return;
+          }
+
+          signalInfo.innerHTML =
+            '<strong>'+signals.length+'</strong> / '+total+' sinyal gösteriliyor (en yüksek güven) · ' +
+            (data && data.ms ? ((data.ms/1000).toFixed(1)+'s') : '');
+          signalInfo.style.display = 'inline-flex';
+
+          displaySignals(signals);
+        })
+        .catch(function(err){
+          console.error('API Hatası:', err);
+          showError('API Hatası: ' + (err && err.message ? err.message : 'Bilinmeyen'));
+          coins.innerHTML =
+            '<div class="empty-state">' +
+              '<div style="font-size:3rem;margin-bottom:10px;">⚠️</div>' +
+              '<h3>Bağlantı Hatası</h3>' +
+              '<p>'+(err && err.message ? err.message : 'Bilinmeyen hata')+'</p>' +
+              '<p style="color:var(--text-tertiary);font-size:.8rem;margin-top:8px;">Backend ve env ayarlarını kontrol et.</p>' +
+            '</div>';
+        })
+        .finally(function(){
+          loading.style.display = 'none';
+          btn.disabled = false;
+        });
+    }
+
+    btn.addEventListener('click', getSignals);
+
+    // “Güven Rehberi” şimdilik basit bilgi
+    toggleInfo.addEventListener('click', function(){
+      alert('Güven Rehberi:\n%75-85: Yüksek\n%68-77: Orta-Yüksek\n%60-70: Orta\n\nNot: TP/SL hareket % olarak + x20 etki ayrı gösterilir.');
+    });
+  </script>
 </body>
 </html>
