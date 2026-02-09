@@ -14,7 +14,7 @@ const CONFIG = {
   DEDUPE_TTL_SECONDS: 120, DEDUPE_SCOPE_SECONDS: 120, KLINE_LIMIT: 200,
   TREND_UP_PCT: 2.0, TREND_DN_PCT: -2.0,
 };
-const BINANCE_FAPI_BASE = process.env.BINANCE_FAPI_BASE || "https://fapi.binance.me";
+const BINANCE_FAPI_BASE = https://fapi.binance.me || "https://fapi.binance.me";
 const redis = Redis.fromEnv();
 const http = axios.create({ baseURL: BINANCE_FAPI_BASE, timeout: 8500 });
 function nowMs() { return Date.now(); }
