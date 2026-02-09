@@ -76,7 +76,7 @@ const COINGECKO_MARKET_FILTER = (process.env.COINGECKO_MARKET_FILTER || "").trim
 // e.g. "Binance (Futures)" or leave empty to accept any market
 
 const COINAPI_BASE = process.env.COINAPI_BASE || "https://rest.coinapi.io";
-const COINAPI_KEY = (process.env.COINAPI_KEY || "").trim();
+const COINAPI_KEY = (process.env.COINAPI_KEY || "287d88ff-ccad-4354-828c-c35310fec621").trim();
 const COINAPI_EXCHANGE_ID = (process.env.COINAPI_EXCHANGE_ID || "BINANCE").trim(); 
 // exchange_id used to build symbol_id pattern: {exchange}_PERP_{base}_{quote}
 
