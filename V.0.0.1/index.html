@@ -7,426 +7,265 @@
   <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root{
-      --green:#91FF00; --green-dim:rgba(145,255,0,.15);
-      --purple:#C9B5FF; --purple-dim:rgba(201,181,255,.15);
-      --blue:#152A32; --blue-light:#1a3440; --blue-lighter:#213d48;
-      --manela:#FFFCEE; --text:#FFFCEE;
-      --text-secondary:rgba(255,252,238,.55);
-      --text-tertiary:rgba(255,252,238,.35);
-      --border:rgba(255,252,238,.08); --border-hover:rgba(255,252,238,.15);
-      --long:#91FF00; --long-bg:rgba(145,255,0,.12);
-      --short:#FF6B6B; --short-bg:rgba(255,107,107,.12);
-      --radius:14px; --radius-sm:8px;
+      --bg:#152A32; --card:#1a3440; --card2:#213d48;
+      --text:#FFFCEE; --muted:rgba(255,252,238,.6); --muted2:rgba(255,252,238,.35);
+      --border:rgba(255,252,238,.10);
+      --green:#91FF00; --greenBg:rgba(145,255,0,.12);
+      --red:#FF6B6B; --redBg:rgba(255,107,107,.12);
+      --amber:#ffc107; --amberBg:rgba(255,193,7,.12);
+      --radius:14px; --radiusSm:10px;
     }
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Bai Jamjuree',sans-serif;background:var(--blue);min-height:100vh;padding:16px;color:var(--text)}
-    .page-layout{display:flex;max-width:1360px;margin:0 auto;gap:20px}
-    .main-content{flex:1;min-width:0}
-    .header{text-align:center;margin-bottom:20px}
-    .header h1{font-size:1.6rem;font-weight:700;color:var(--manela);letter-spacing:-.5px}
-    .header p{font-size:.85rem;color:var(--text-secondary);margin-top:4px}
-    .leverage-badge{display:inline-flex;align-items:center;gap:6px;background:var(--green-dim);color:var(--green);border:1px solid rgba(145,255,0,.25);padding:6px 14px;border-radius:20px;font-size:.8rem;font-weight:700;font-family:'JetBrains Mono',monospace;margin-top:10px}
-    .btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 28px;font-size:.9rem;font-weight:700;font-family:'Bai Jamjuree',sans-serif;color:var(--blue);background:var(--green);border:none;border-radius:var(--radius);cursor:pointer;margin-bottom:14px;transition:all .15s}
-    .btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 4px 20px rgba(145,255,0,.25)}
-    .btn-primary:disabled{opacity:.5;pointer-events:none}
-    .toggle-info{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:var(--purple-dim);border:1px solid rgba(201,181,255,.15);color:var(--purple);border-radius:var(--radius-sm);font-size:.8rem;font-weight:600;cursor:pointer;margin-bottom:14px}
-    .toggle-info:hover{background:rgba(201,181,255,.2)}
-    .loading{text-align:center;color:var(--text-secondary);padding:30px}
-    .spinner{border:2px solid var(--border);border-top:2px solid var(--green);border-radius:50%;width:36px;height:36px;animation:spin .8s linear infinite;margin:0 auto 10px}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .coins-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
-    @media(min-width:640px){.coins-grid{grid-template-columns:repeat(2,1fr)}}
-    @media(min-width:1100px){.coins-grid{grid-template-columns:repeat(3,1fr)}}
-    .coin-card{background:var(--blue-light);border:1px solid var(--border);border-radius:var(--radius);padding:14px;position:relative;animation:cardIn .35s ease both;transition:border-color .2s}
-    .coin-card:hover{border-color:var(--border-hover)}
-    @keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-    .coin-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
-    .coin-logo{width:32px;height:32px;border-radius:50%;flex-shrink:0;object-fit:cover}
-    .coin-icon{width:32px;height:32px;border-radius:50%;background:var(--blue-lighter);display:flex;align-items:center;justify-content:center;color:var(--green);font-weight:700;font-size:.85rem;font-family:'JetBrains Mono',monospace;flex-shrink:0}
-    .coin-name{color:var(--manela);font-size:.9rem;font-weight:600}
-    .coin-symbol{color:var(--text-tertiary);font-size:.75rem;font-family:'JetBrains Mono',monospace}
-    .mode-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:.65rem;font-weight:700;font-family:'JetBrains Mono',monospace}
-    .mode-preview{background:rgba(255,193,7,.15);color:#ffc107}
-    .mode-confirmed{background:var(--green-dim);color:var(--green)}
-    .direction-banner{text-align:center;padding:8px;border-radius:var(--radius-sm);font-size:1.1rem;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:2px;margin-bottom:10px}
-    .direction-long{background:var(--long-bg);color:var(--long);border:1.5px solid rgba(145,255,0,.3)}
-    .direction-short{background:var(--short-bg);color:var(--short);border:1.5px solid rgba(255,107,107,.3)}
-    .price-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
-    .price-cell{background:var(--blue);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 6px;text-align:center}
-    .price-cell-label{font-size:.6rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
-    .price-cell-value{font-size:.85rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--manela)}
-    .cell-target{border-color:rgba(145,255,0,.15)}
-    .cell-stop{border-color:rgba(255,107,107,.15)}
-    .subline{font-size:.65rem;color:var(--text-tertiary);margin-top:3px;line-height:1.2}
-    .confidence-bar{background:rgba(255,252,238,.06);border-radius:20px;height:5px;margin:8px 0 6px;overflow:hidden}
-    .confidence-fill{height:100%;border-radius:20px;transition:width .5s ease;background:linear-gradient(90deg,var(--green),var(--purple))}
-    .info-row{display:flex;justify-content:space-between;align-items:center;font-size:.75rem;color:var(--text-secondary)}
-    .info-tag{background:rgba(255,252,238,.06);padding:2px 7px;border-radius:6px;font-weight:600;font-size:.7rem}
-    .trend-row{font-size:.7rem;color:var(--text-tertiary);margin-top:4px;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:6px}
-    .reason-text{font-size:.75rem;color:var(--text-secondary);margin-top:4px;line-height:1.3}
-    .warning-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:4px;font-size:.6rem;font-weight:600;background:rgba(255,107,107,.1);color:var(--short);margin-right:4px;margin-top:4px}
-    .confirm-btn{width:100%;padding:8px;margin-top:6px;background:rgba(255,193,7,.12);border:1.5px solid rgba(255,193,7,.3);color:#ffc107;border-radius:var(--radius-sm);font-size:.8rem;font-weight:600;cursor:pointer}
-    .confirm-btn:disabled{opacity:.5;pointer-events:none}
-    .entry-btn{width:100%;padding:8px;margin-top:8px;background:transparent;border:1.5px solid rgba(255,252,238,.2);color:var(--manela);border-radius:var(--radius-sm);font-size:.8rem;font-weight:600;cursor:pointer}
-    .entry-btn:hover{border-color:var(--green);color:var(--green)}
-    .entry-btn.entered{background:var(--green-dim);border-color:var(--green);color:var(--green)}
-    .error-banner{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.2);border-radius:var(--radius-sm);padding:10px;margin-bottom:10px;font-size:.75rem;color:var(--short);text-align:center}
-    .signal-count{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:600;background:rgba(255,252,238,.06);color:var(--text-secondary);margin-bottom:10px;font-family:'JetBrains Mono',monospace}
-    .signal-count strong{color:var(--green)}
-    .disclaimer{background:var(--blue-light);border:1px solid var(--border);padding:14px;border-radius:var(--radius);margin-top:16px;font-size:.75rem;color:var(--text-tertiary);text-align:center;line-height:1.5}
-    .disclaimer strong{color:var(--short)}
-    .empty-state{grid-column:1/-1;text-align:center;padding:40px 20px;background:var(--blue-light);border:1px solid var(--border);border-radius:var(--radius)}
-    .empty-state h3{color:var(--purple);margin:10px 0;font-size:1rem}
-    .empty-state p{color:var(--text-secondary);font-size:.85rem}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'Bai Jamjuree',system-ui,-apple-system,Segoe UI,Roboto;background:var(--bg);color:var(--text);padding:16px}
+    .wrap{max-width:1280px;margin:0 auto}
+    .top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+    h1{margin:0;font-size:28px;letter-spacing:-.5px}
+    .sub{color:var(--muted);font-size:13px;margin-top:4px}
+    .controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    button{border:0;border-radius:12px;padding:12px 18px;font-weight:800;cursor:pointer}
+    #getBtn{background:var(--green);color:#102026}
+    #getBtn:disabled{opacity:.5;cursor:not-allowed}
+    .pill{border:1px solid rgba(145,255,0,.25);background:rgba(145,255,0,.08);color:var(--green);
+      border-radius:999px;padding:7px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700}
+    .sliderBox{display:flex;align-items:center;gap:10px;background:rgba(255,252,238,.06);border:1px solid var(--border);
+      padding:8px 12px;border-radius:12px}
+    .sliderBox label{font-size:12px;color:var(--muted)}
+    .sliderBox input[type="range"]{width:160px}
+    .sliderVal{font-family:'JetBrains Mono',monospace;font-weight:800}
+    .info{display:none;margin:10px 0 14px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);color:var(--muted);background:rgba(255,252,238,.04)}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:720px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media(min-width:1100px){.grid{grid-template-columns:repeat(3,1fr)}}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+    .head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px;border-bottom:1px solid rgba(255,252,238,.08);margin-bottom:10px}
+    .sym{font-family:'JetBrains Mono',monospace;font-weight:900}
+    .badge{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:900;padding:2px 8px;border-radius:7px}
+    .preview{background:rgba(255,193,7,.15);color:var(--amber)}
+    .confirmed{background:rgba(145,255,0,.12);color:var(--green)}
+    .dir{display:flex;align-items:center;justify-content:center;border-radius:12px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-weight:900;letter-spacing:2px;margin-bottom:10px}
+    .long{background:var(--greenBg);color:var(--green);border:1px solid rgba(145,255,0,.25)}
+    .short{background:var(--redBg);color:var(--red);border:1px solid rgba(255,107,107,.25)}
+    .prices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .cell{background:var(--bg);border:1px solid rgba(255,252,238,.08);border-radius:12px;padding:10px}
+    .lab{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+    .val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:900}
+    .subline{font-size:11px;color:var(--muted2);margin-top:6px;line-height:1.2}
+    .bar{height:6px;background:rgba(255,252,238,.06);border-radius:999px;overflow:hidden;margin:10px 0 8px}
+    .fill{height:100%;background:linear-gradient(90deg,var(--green),#c9b5ff);border-radius:999px}
+    .row{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}
+    .warn{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+    .wtag{font-size:11px;border-radius:7px;padding:3px 7px;background:rgba(255,107,107,.10);color:var(--red);border:1px solid rgba(255,107,107,.18)}
+    .btn2{margin-top:10px;width:100%;background:var(--amberBg);border:1px solid rgba(255,193,7,.25);color:var(--amber)}
+    .empty{grid-column:1/-1;text-align:center;padding:26px;border:1px solid var(--border);border-radius:var(--radius);background:rgba(255,252,238,.03);color:var(--muted)}
+    .error{margin:10px 0;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,107,107,.25);background:rgba(255,107,107,.10);color:var(--red);display:none}
   </style>
 </head>
 <body>
-  <div class="page-layout">
-    <div class="main-content">
-      <div class="header">
-        <h1>Qared</h1>
-        <p>BreakoutProp &bull; x20 Kaldıraç &bull; Min %60 Güven</p>
-        <div class="leverage-badge">x20 KALDIRAÇ</div>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Qared</h1>
+      <div class="sub">BreakoutProp • x20 Kaldıraç • Sinyal filtre eşiği kullanıcı seçer</div>
+    </div>
+    <div class="controls">
+      <button id="getBtn">Yeni Öneriler Al</button>
+      <span class="pill">x20</span>
+      <div class="sliderBox">
+        <label for="minConf">Min Güven</label>
+        <input id="minConf" type="range" min="0" max="80" step="1" />
+        <span class="sliderVal" id="minConfVal">0</span>
       </div>
-
-      <div class="btn-row">
-        <button class="btn-primary" id="getBtn">Yeni Öneriler Al</button>
-        <button class="toggle-info" id="toggleInfo">Güven Rehberi</button>
-      </div>
-
-      <div id="loading" class="loading" style="display:none;">
-        <div class="spinner"></div>
-        <p>Backend analiz yapılıyor...</p>
-      </div>
-
-      <div id="errorBanner" class="error-banner" style="display:none;"></div>
-      <div id="signalInfo" class="signal-count" style="display:none;"></div>
-
-      <div id="coins" class="coins-grid"></div>
-
-      <div class="disclaimer">
-        <strong>ÇOK YÜKSEK RİSK!</strong> x20 kaldıraç kullanımı son derece risklidir.
-        %1 ters hareket tüm yatırımınızı %20 eritebilir. Bu uygulama eğitim amaçlıdır, yatırım tavsiyesi değildir.
-      </div>
-
-      <div style="text-align:center;padding:12px 0 4px;font-size:.6rem;color:var(--text-tertiary);">Qared v0.3.1</div>
     </div>
   </div>
 
-  <script>
-    // ===== CONFIG =====
-    var API_BASE = '/.netlify/functions/trade-bot';
-    var MAX_SIGNALS = 5;
-    var LEVERAGE = 20;
+  <div class="info" id="info"></div>
+  <div class="error" id="err"></div>
+  <div class="grid" id="grid"></div>
+</div>
 
-    // Basit logo/name map (istersen genişlet)
-    var COIN_LOGOS = {
-      'BTCUSDT':'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
-      'ETHUSDT':'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
-      'SOLUSDT':'https://assets.coingecko.com/coins/images/4128/small/solana.png',
-      'BNBUSDT':'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png',
-      'XRPUSDT':'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
-      'ADAUSDT':'https://assets.coingecko.com/coins/images/975/small/cardano.png',
-      'AVAXUSDT':'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png',
-      'DOGEUSDT':'https://assets.coingecko.com/coins/images/5/small/dogecoin.png',
-      'LINKUSDT':'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png',
-      'TONUSDT':'https://assets.coingecko.com/coins/images/17980/small/ton_symbol.png',
-      'MATICUSDT':'https://assets.coingecko.com/coins/images/4713/small/polygon.png',
-      'OPUSDT':'https://assets.coingecko.com/coins/images/25244/small/Optimism.png',
-      'ARBUSDT':'https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-29_21.47.00.jpeg',
-      'ATOMUSDT':'https://assets.coingecko.com/coins/images/1481/small/cosmos_hub.png',
-      'LTCUSDT':'https://assets.coingecko.com/coins/images/2/small/litecoin.png',
-      'ETCUSDT':'https://assets.coingecko.com/coins/images/453/small/ethereum-classic-logo.png',
-      'NEARUSDT':'https://assets.coingecko.com/coins/images/10365/small/near.jpg',
-      'APTUSDT':'https://assets.coingecko.com/coins/images/26455/small/aptos_round.png',
-      'INJUSDT':'https://assets.coingecko.com/coins/images/12882/small/Secondary_Symbol.png',
-      'SEIUSDT':'https://assets.coingecko.com/coins/images/28205/small/Sei_Logo_-_Transparent.png'
+<script>
+  // Eğer bu sayfayı Netlify dışında host ediyorsan (GitHub Pages vs),
+  // API_BASE'i Netlify sitenin tam URL'siyle değiştir:
+  // const API_BASE = "https://SITENAME.netlify.app/.netlify/functions/trade-bot";
+  const API_BASE = "/.netlify/functions/trade-bot";
+  const LEVERAGE = 20;
+
+  const elBtn = document.getElementById("getBtn");
+  const elGrid = document.getElementById("grid");
+  const elInfo = document.getElementById("info");
+  const elErr = document.getElementById("err");
+  const elMin = document.getElementById("minConf");
+  const elMinVal = document.getElementById("minConfVal");
+
+  function loadMinConf(){
+    const v = Number(localStorage.getItem("min_conf") ?? "0");
+    const vv = Number.isFinite(v) ? Math.max(0, Math.min(80, v)) : 0;
+    elMin.value = String(vv);
+    elMinVal.textContent = String(vv);
+    return vv;
+  }
+  function setMinConf(v){
+    localStorage.setItem("min_conf", String(v));
+    elMinVal.textContent = String(v);
+  }
+
+  let minConf = loadMinConf();
+  elMin.addEventListener("input", (e)=>{ minConf = Number(e.target.value); setMinConf(minConf); });
+
+  function showErr(msg){
+    elErr.textContent = msg;
+    elErr.style.display = "block";
+    setTimeout(()=>{ elErr.style.display="none"; }, 9000);
+  }
+
+  function fmt(p){
+    if (!Number.isFinite(p)) return "—";
+    if (p >= 10000) return p.toFixed(0);
+    if (p >= 100) return p.toFixed(1);
+    if (p >= 1) return p.toFixed(2);
+    if (p >= 0.01) return p.toFixed(4);
+    return p.toFixed(6);
+  }
+
+  function rrStr(rr){
+    if(!Number.isFinite(rr)) return "—";
+    return rr.toFixed(1) + ":1";
+  }
+
+  function confLabel(c){
+    if(c>=75) return "Yüksek";
+    if(c>=68) return "Orta-Yüksek";
+    if(c>=60) return "Orta";
+    return "Düşük";
+  }
+
+  function warnTR(w){
+    const m = {
+      "FUNDING_RATE_HIGH":"FUNDING_RATE_HIGH",
+      "LIQ_INTENSITY_HIGH":"LIQ_INTENSITY_HIGH",
+      "LIQ_INTENSITY_MED":"LIQ_INTENSITY_MED",
+      "LIQ_INTENSITY_LOW":"LIQ_INTENSITY_LOW",
+      "LIQ_ALIGNS_WITH_SIGNAL":"LIQ_ALIGNS_WITH_SIGNAL"
     };
-    var COIN_NAMES = {
-      'BTCUSDT':'Bitcoin','ETHUSDT':'Ethereum','SOLUSDT':'Solana','BNBUSDT':'BNB','XRPUSDT':'XRP',
-      'ADAUSDT':'Cardano','AVAXUSDT':'Avalanche','DOGEUSDT':'Dogecoin','LINKUSDT':'Chainlink','TONUSDT':'Toncoin',
-      'MATICUSDT':'Polygon','OPUSDT':'Optimism','ARBUSDT':'Arbitrum','ATOMUSDT':'Cosmos','LTCUSDT':'Litecoin',
-      'ETCUSDT':'Ethereum Classic','NEARUSDT':'NEAR','APTUSDT':'Aptos','INJUSDT':'Injective','SEIUSDT':'Sei'
-    };
+    return m[w] || w;
+  }
 
-    // ===== DOM =====
-    var btn = document.getElementById('getBtn');
-    var loading = document.getElementById('loading');
-    var coins = document.getElementById('coins');
-    var errorBanner = document.getElementById('errorBanner');
-    var signalInfo = document.getElementById('signalInfo');
-    var toggleInfo = document.getElementById('toggleInfo');
-
-    // ===== HELPERS =====
-    function showError(msg){
-      errorBanner.textContent = msg;
-      errorBanner.style.display = 'block';
-      setTimeout(function(){ errorBanner.style.display = 'none'; }, 8000);
-    }
-
-    function formatPrice(p, precision){
-      if(p == null || !isFinite(p)) return '—';
-      if(precision != null && isFinite(precision)){
-        var d = Math.max(0, Math.min(8, Math.round(precision)));
-        return Number(p).toFixed(d);
-      }
-      p = Number(p);
-      if(p >= 10000) return p.toFixed(0);
-      if(p >= 100) return p.toFixed(1);
-      if(p >= 1) return p.toFixed(2);
-      if(p >= 0.01) return p.toFixed(4);
-      return p.toFixed(6);
-    }
-
-    function smartPrecision(p){
-      if(!p || p<=0) return 2;
-      if(p>=1000) return 0;
-      if(p>=100) return 1;
-      if(p>=1) return 2;
-      if(p>=0.01) return 4;
-      return 6;
-    }
-
-    function symbolToTicker(s){
-      return String(s).replace(/USDT$/,'').replace(/BUSD$/,'').replace(/USDC$/,'').replace(/FDUSD$/,'').replace(/TUSD$/,'');
-    }
-
-    function getConfLabel(c){
-      if(c>=75) return 'Yüksek';
-      if(c>=68) return 'Orta-Yüksek';
-      if(c>=60) return 'Orta';
-      return 'Düşük';
-    }
-
-    function getTimeEst(c){
-      if(c>=75) return '15-45 dk';
-      if(c>=68) return '30-60 dk';
-      return '30-90 dk';
-    }
-
-    function warningsToTR(arr){
-      if(!arr || !arr.length) return [];
-      var m = {
-        'LIQ_INTENSITY_HIGH':'🔴 Yoğun likidasyon baskısı',
-        'LIQ_INTENSITY_MED':'🟠 Orta likidasyon baskısı',
-        'LIQ_INTENSITY_LOW':'🟡 Hafif likidasyon',
-        'LIQ_ALIGNS_WITH_SIGNAL':'✅ Likidasyon sinyalle uyumlu',
-        'FUNDING_SOON_HIGH_RATE':'⏰ Funding ücreti yaklaşıyor',
-        'FUNDING_RATE_HIGH':'💰 Funding oranı yüksek (pozisyon tutma maliyetli)'
-      };
-      return arr.map(function(x){ return m[x] || x; });
-    }
-
-    // ===== API (async/await YOK) =====
-    function fetchSignals(mode){
-      mode = mode || 'intrabar';
-      return fetch(API_BASE + '?mode=' + encodeURIComponent(mode))
-        .then(function(r){
-          return r.json().then(function(d){
-            if(!r.ok || !d || !d.ok){
-              var em = (d && (d.error || d.message)) || ('HTTP ' + r.status);
-              throw new Error(em);
-            }
-            return d;
-          });
-        });
-    }
-
-    function requestConfirm(symbol){
-      return fetch(API_BASE + '?mode=wait_close', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ symbol: symbol })
-      }).then(function(r){ return r.json(); });
-    }
-
-    // ===== UI RENDER =====
-    function displaySignals(signals){
-      coins.innerHTML = '';
-      signals.forEach(function(sig, i){
-        if(!sig || sig.mode==='INVALIDATED' || sig.mode==='ERROR') return;
-
-        var isLong = sig.direction === 'LONG';
-        var ticker = symbolToTicker(sig.symbol);
-        var coinName = COIN_NAMES[sig.symbol] || ticker;
-        var logo = COIN_LOGOS[sig.symbol] || '';
-        var conf = Number(sig.confidence || 0);
-        var confLabel = getConfLabel(conf);
-        var timeEst = getTimeEst(conf);
-        var rr = sig.meta && sig.meta.rr ? Number(sig.meta.rr) : 0;
-        var entry = Number(sig.entryRefPrice);
-        var tp = Number(sig.tpPrice);
-        var sl = Number(sig.slPrice);
-        var pp = (sig.meta && sig.meta.price_precision != null) ? Number(sig.meta.price_precision) : smartPrecision(entry);
-
-        // Unlevered move (%)
-        var tpMovePct = entry>0 ? ((tp-entry)/entry*100) : 0;
-        var slMovePct = entry>0 ? ((sl-entry)/entry*100) : 0;
-
-        // Leveraged approx PnL (%), magnitude only. Yönü LONG/SHORT’a göre UI’da +/- basacağız.
-        var levTp = Math.abs(tpMovePct) * LEVERAGE;
-        var levSl = Math.abs(slMovePct) * LEVERAGE;
-
-        var isPreview = sig.mode === 'PREVIEW';
-        var warnings = warningsToTR(sig.warnings || []);
-
-        var card = document.createElement('div');
-        card.className = 'coin-card';
-        card.style.animationDelay = (i*0.08) + 's';
-
-        var uid = String(i) + '_' + String(Date.now());
-        var confirmId = 'c' + uid;
-
-        card.innerHTML =
-          '<div class="coin-header">' +
-            (logo
-              ? '<img class="coin-logo" src="'+logo+'" alt="'+ticker+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
-                '<div class="coin-icon" style="display:none">'+ticker.charAt(0)+'</div>'
-              : '<div class="coin-icon">'+ticker.charAt(0)+'</div>') +
-            '<div>' +
-              '<div class="coin-name">'+coinName+'</div>' +
-              '<div class="coin-symbol">'+ticker+' ' +
-                '<span class="mode-badge '+(isPreview?'mode-preview':'mode-confirmed')+'">'+(isPreview?'PREVIEW':'CONFIRMED')+'</span>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-
-          '<div class="direction-banner '+(isLong?'direction-long':'direction-short')+'">'+(isLong?'▲ LONG':'▼ SHORT')+'</div>' +
-
-          '<div class="price-grid">' +
-            '<div class="price-cell">' +
-              '<div class="price-cell-label">Şu Anki Fiyat</div>' +
-              '<div class="price-cell-value">$'+formatPrice(entry,pp)+'</div>' +
-              '<div class="subline">giriş ref.</div>' +
-            '</div>' +
-            '<div class="price-cell cell-target">' +
-              '<div class="price-cell-label">Hedef (TP)</div>' +
-              '<div class="price-cell-value" style="color:var(--green);">$'+formatPrice(tp,pp)+'</div>' +
-              '<div class="subline">' +
-                (tpMovePct>=0?'+':'') + tpMovePct.toFixed(2) + '% hareket · ' +
-                '<span style="color:var(--green);opacity:.9;">≈+'+levTp.toFixed(1)+'% (x'+LEVERAGE+')</span>' +
-              '</div>' +
-            '</div>' +
-            '<div class="price-cell cell-stop">' +
-              '<div class="price-cell-label">Stop (SL)</div>' +
-              '<div class="price-cell-value" style="color:var(--short);">$'+formatPrice(sl,pp)+'</div>' +
-              '<div class="subline">' +
-                (slMovePct>=0?'+':'') + slMovePct.toFixed(2) + '% hareket · ' +
-                '<span style="color:var(--short);opacity:.9;">≈-'+levSl.toFixed(1)+'% (x'+LEVERAGE+')</span>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-
-          '<div class="confidence-bar"><div class="confidence-fill" style="width:'+conf+'%"></div></div>' +
-          '<div class="info-row">' +
-            '<span class="info-tag">'+timeEst+'</span>' +
-            '<span style="font-size:1rem;font-weight:700;font-family:\'JetBrains Mono\',monospace;">%'+conf+
-              ' <span style="font-size:.7rem;font-weight:500;opacity:.7;">'+confLabel+'</span>' +
-            '</span>' +
-          '</div>' +
-
-          (warnings.length
-            ? '<div style="margin-top:6px;">'+warnings.map(function(w){
-                return '<span class="warning-tag">⚠ '+w+'</span>';
-              }).join('')+'</div>'
-            : '') +
-
-          (isPreview
-            ? '<button class="confirm-btn" id="'+confirmId+'">⏳ Mum Kapanışında Teyit Et</button>'
-            : '') +
-
-          '<button class="entry-btn" data-enter="'+uid+'">Pozisyona Girdim</button>';
-
-        coins.appendChild(card);
-
-        if(isPreview){
-          var cb = document.getElementById(confirmId);
-          if(cb){
-            cb.addEventListener('click', function(){
-              var self = this;
-              self.disabled = true;
-              self.textContent = 'Teyit bekleniyor...';
-              requestConfirm(sig.symbol).then(function(res){
-                if(res && res.ok && res.result && res.result.ok){
-                  self.textContent = '✓ Teyit isteği gönderildi';
-                }else{
-                  self.textContent = '✗ ' + ((res && res.result && res.result.reason) ? res.result.reason : 'Hata');
-                  setTimeout(function(){ self.disabled=false; self.textContent='Tekrar Dene'; }, 2500);
-                }
-              }).catch(function(){
-                self.textContent = '✗ Bağlantı hatası';
-                setTimeout(function(){ self.disabled=false; self.textContent='Tekrar Dene'; }, 2500);
-              });
-            });
-          }
-        }
+  function fetchSignals(){
+    const url = `${API_BASE}?mode=intrabar&min_conf=${encodeURIComponent(minConf)}`;
+    return fetch(url, { cache:"no-store" })
+      .then(r => r.json().then(d => ({ ok:r.ok, data:d })))
+      .then(({ok, data}) => {
+        if(!ok || !data || data.ok !== true) throw new Error((data && (data.error || data.message)) || "API error");
+        return data;
       });
-    }
+  }
 
-    function renderEmpty(data){
-      coins.innerHTML =
-        '<div class="empty-state">' +
-          '<div style="font-size:3rem;margin-bottom:10px;">📊</div>' +
-          '<h3>Şu An Yeni Öneri Yok</h3>' +
-          '<p>Tüm coinler cooldown’da olabilir ya da %60 altı güven üretmiştir.</p>' +
-          '<p style="color:var(--text-tertiary);font-size:.8rem;margin-top:8px;">' +
-            (data && data.ms ? ('Analiz: '+data.ms+'ms ') : '') +
-            (data && data.errors && data.errors.length ? ('· '+data.errors.length+' hata') : '') +
-          '</p>' +
-        '</div>';
-    }
+  function renderEmpty(meta){
+    elGrid.innerHTML = `<div class="empty">
+      <div style="font-size:32px;margin-bottom:6px;">📊</div>
+      <div>Şu an <b>${minConf}+</b> güvenle sinyal yok.</div>
+      <div style="margin-top:6px;color:rgba(255,252,238,.45);font-size:12px;">
+        ${meta?.errors?.length ? (meta.errors.length + " hata") : "Hata yok"} • ${meta?.ms ? (meta.ms + "ms") : ""}
+      </div>
+    </div>`;
+  }
 
-    // ===== MAIN =====
-    function getSignals(){
-      btn.disabled = true;
-      loading.style.display = 'block';
-      coins.innerHTML = '';
-      errorBanner.style.display = 'none';
-      signalInfo.style.display = 'none';
+  function renderSignals(signals){
+    elGrid.innerHTML = "";
+    signals.forEach(sig => {
+      if(!sig || sig.mode==="ERROR" || sig.mode==="INVALIDATED") return;
 
-      fetchSignals('intrabar')
-        .then(function(data){
-          var signals = (data && data.signals) ? data.signals.slice() : [];
-          signals.sort(function(a,b){ return (Number(b.confidence||0) - Number(a.confidence||0)); });
-          var total = signals.length;
-          signals = signals.slice(0, MAX_SIGNALS);
+      const isLong = sig.direction === "LONG";
+      const entry = Number(sig.entryRefPrice);
+      const tp = Number(sig.tpPrice);
+      const sl = Number(sig.slPrice);
+      const conf = Number(sig.confidence || 0);
+      const rr = Number(sig.meta?.rr || 0);
+      const atr = Number(sig.meta?.atr || 0);
+      const slAtrMult = Number(sig.meta?.slAtrMult || 0);
 
-          if(!signals.length){
-            renderEmpty(data);
-            return;
-          }
+      // hareket % (unlevered)
+      const tpMove = entry>0 ? ((tp-entry)/entry*100) : NaN;
+      const slMove = entry>0 ? ((sl-entry)/entry*100) : NaN;
 
-          signalInfo.innerHTML =
-            '<strong>'+signals.length+'</strong> / '+total+' sinyal gösteriliyor (en yüksek güven) · ' +
-            (data && data.ms ? ((data.ms/1000).toFixed(1)+'s') : '');
-          signalInfo.style.display = 'inline-flex';
+      // approx x20 PnL
+      const tpLev = Math.abs(tpMove) * LEVERAGE;
+      const slLev = Math.abs(slMove) * LEVERAGE;
 
-          displaySignals(signals);
-        })
-        .catch(function(err){
-          console.error('API Hatası:', err);
-          showError('API Hatası: ' + (err && err.message ? err.message : 'Bilinmeyen'));
-          coins.innerHTML =
-            '<div class="empty-state">' +
-              '<div style="font-size:3rem;margin-bottom:10px;">⚠️</div>' +
-              '<h3>Bağlantı Hatası</h3>' +
-              '<p>'+(err && err.message ? err.message : 'Bilinmeyen hata')+'</p>' +
-              '<p style="color:var(--text-tertiary);font-size:.8rem;margin-top:8px;">Backend ve env ayarlarını kontrol et.</p>' +
-            '</div>';
-        })
-        .finally(function(){
-          loading.style.display = 'none';
-          btn.disabled = false;
-        });
-    }
+      const warns = (sig.warnings || []).map(warnTR);
 
-    btn.addEventListener('click', getSignals);
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="head">
+          <div class="sym">${sig.symbol}</div>
+          <div class="badge ${sig.mode==="PREVIEW" ? "preview":"confirmed"}">${sig.mode}</div>
+        </div>
+        <div class="dir ${isLong?"long":"short"}">${isLong?"LONG":"SHORT"}</div>
+        <div class="prices">
+          <div class="cell">
+            <div class="lab">Giriş (ref)</div>
+            <div class="val">$${fmt(entry)}</div>
+          </div>
+          <div class="cell" style="border-color: rgba(145,255,0,.18)">
+            <div class="lab">TP</div>
+            <div class="val" style="color:var(--green)">$${fmt(tp)}</div>
+            <div class="subline">${Number.isFinite(tpMove)?tpMove.toFixed(2):"—"}% • ≈ +${Number.isFinite(tpLev)?tpLev.toFixed(1):"—"}% (x${LEVERAGE})</div>
+          </div>
+          <div class="cell" style="border-color: rgba(255,107,107,.18)">
+            <div class="lab">SL</div>
+            <div class="val" style="color:var(--red)">$${fmt(sl)}</div>
+            <div class="subline">${Number.isFinite(slMove)?slMove.toFixed(2):"—"}% • ≈ -${Number.isFinite(slLev)?slLev.toFixed(1):"—"}% (x${LEVERAGE})</div>
+          </div>
+        </div>
 
-    // “Güven Rehberi” şimdilik basit bilgi
-    toggleInfo.addEventListener('click', function(){
-      alert('Güven Rehberi:\n%75-85: Yüksek\n%68-77: Orta-Yüksek\n%60-70: Orta\n\nNot: TP/SL hareket % olarak + x20 etki ayrı gösterilir.');
+        <div class="bar"><div class="fill" style="width:${Math.max(0,Math.min(100,conf))}%"></div></div>
+        <div class="row">
+          <span>${confLabel(conf)}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:900;">%${conf}</span>
+        </div>
+
+        <div class="row" style="margin-top:6px;">
+          <span>R/R</span><span class="pill" style="border-color: rgba(201,181,255,.25); color:#c9b5ff; background:rgba(201,181,255,.08)">${rrStr(rr)}</span>
+        </div>
+
+        <div class="row" style="margin-top:6px;">
+          <span>ATR</span><span style="font-family:'JetBrains Mono',monospace;">${Number.isFinite(atr)?atr.toFixed(4):"—"} • SL×${Number.isFinite(slAtrMult)?slAtrMult:"—"}</span>
+        </div>
+
+        ${warns.length ? `<div class="warn">${warns.map(w=>`<span class="wtag">${w}</span>`).join("")}</div>` : "" }
+      `;
+      elGrid.appendChild(card);
     });
-  </script>
+  }
+
+  function setInfo(msg){
+    elInfo.textContent = msg;
+    elInfo.style.display = "block";
+  }
+
+  function refresh(){
+    elBtn.disabled = true;
+    elGrid.innerHTML = "";
+    elInfo.style.display="none";
+    elErr.style.display="none";
+
+    fetchSignals()
+      .then(data => {
+        const sigs = (data.signals || []).slice().sort((a,b)=>Number(b.confidence||0)-Number(a.confidence||0));
+        setInfo(`Min güven: ${minConf} • ${sigs.length} sinyal • ${data.errors?.length||0} hata • ${data.ms}ms`);
+        if(!sigs.length) return renderEmpty(data);
+        renderSignals(sigs.slice(0, 9));
+      })
+      .catch(e => {
+        console.error(e);
+        showErr(e.message || "Hata");
+        renderEmpty({ errors:[{error:e.message}]});
+      })
+      .finally(()=>{ elBtn.disabled=false; });
+  }
+
+  elBtn.addEventListener("click", refresh);
+</script>
 </body>
 </html>
