@@ -62,9 +62,6 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
 .coin-logo { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; object-fit: cover; }
 .coin-name { color: var(--manela); font-size: 0.9rem; font-weight: 600; }
 .coin-symbol { color: var(--text-tertiary); font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; }
-.change-badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
-.change-positive { background: var(--long-bg); color: var(--long); }
-.change-negative { background: var(--short-bg); color: var(--short); }
 .direction-banner { text-align: center; padding: 8px; border-radius: var(--radius-sm); font-size: 1.1rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: 2px; margin-bottom: 10px; }
 .direction-long { background: var(--long-bg); color: var(--long); border: 1.5px solid rgba(145, 255, 0, 0.3); }
 .direction-short { background: var(--short-bg); color: var(--short); border: 1.5px solid rgba(255, 107, 107, 0.3); }
@@ -147,6 +144,8 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
 .confirm-btn:disabled { opacity: 0.4; pointer-events: none; }
 .confirm-btn.confirmed { background: var(--green-dim); border-color: var(--green); color: var(--green); }
 .error-banner { background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.2); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 10px; font-size: 0.75rem; color: var(--short); text-align: center; }
+.signal-count { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: rgba(255,252,238,0.06); color: var(--text-secondary); margin-bottom: 10px; font-family: 'JetBrains Mono', monospace; }
+.signal-count strong { color: var(--green); }
 </style>
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
@@ -160,7 +159,7 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
             </div>
             <div class="btn-row">
                 <button class="btn-primary" id="getBtn">Yeni Öneriler Al</button>
-                <button class="toggle-info mobile-only" id="toggleInfo">Güven Rehberi</button>
+                <button class="toggle-info" id="toggleInfo">Güven Rehberi</button>
             </div>
             <div class="modal-overlay" id="modalOverlay"></div>
             <div class="half-modal" id="halfModal">
@@ -173,6 +172,7 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
                 <p>Backend analiz yapılıyor...</p>
             </div>
             <div id="errorBanner" class="error-banner" style="display: none;"></div>
+            <div id="signalInfo" class="signal-count" style="display: none;"></div>
             <div id="watchedSection" class="watched-section" style="display: none;">
                 <h3>
                     <span>Takip Edilenler (<span id="watchedCount">0</span>)</span>
@@ -187,9 +187,9 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
                 yatırım tavsiyesi değildir. Gerçek para ile kaldıraçlı işlem yapmadan önce 
                 mutlaka profesyonel danışmanlık alın.
             </div>
-            <div style="text-align:center;padding:12px 0 4px;font-size:0.6rem;color:var(--text-tertiary);">Qared v0.1.0 (Backend)</div>
+            <div style="text-align:center;padding:12px 0 4px;font-size:0.6rem;color:var(--text-tertiary);">Qared v0.3.0</div>
         </div>
-        <aside class="sidebar" id="sidebar" style="display: none;">
+        <aside class="sidebar" id="sidebar" style="display:none;">
             <div class="sidebar-header"><h3>Güven Rehberi</h3></div>
             <div class="sidebar-scale">
                 <div class="scale-bar">
@@ -209,26 +209,84 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
     </div>
 
     <script>
+        // ===== CONFIG =====
         const API_BASE = '/.netlify/functions/trade-bot';
+        const MAX_SIGNALS = 5; // Gösterilecek maksimum sinyal sayısı
+
         const COIN_LOGOS = {
-            'BTCUSDT':'https://assets.coingecko.com/coins/images/1/small/bitcoin.png','ETHUSDT':'https://assets.coingecko.com/coins/images/279/small/ethereum.png','SOLUSDT':'https://assets.coingecko.com/coins/images/4128/small/solana.png','XRPUSDT':'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png','ADAUSDT':'https://assets.coingecko.com/coins/images/975/small/cardano.png','DOGEUSDT':'https://assets.coingecko.com/coins/images/5/small/dogecoin.png','AVAXUSDT':'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png','LINKUSDT':'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png','DOTUSDT':'https://assets.coingecko.com/coins/images/12171/small/polkadot.png','MATICUSDT':'https://assets.coingecko.com/coins/images/4713/small/polygon.png','LTCUSDT':'https://assets.coingecko.com/coins/images/2/small/litecoin.png','UNIUSDT':'https://assets.coingecko.com/coins/images/12504/small/uni.jpg','XLMUSDT':'https://assets.coingecko.com/coins/images/100/small/Stellar_symbol_black_RGB.png','ATOMUSDT':'https://assets.coingecko.com/coins/images/1481/small/cosmos_hub.png','BNBUSDT':'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png','SUIUSDT':'https://assets.coingecko.com/coins/images/26375/small/sui_asset.jpeg','APTUSDT':'https://assets.coingecko.com/coins/images/26455/small/aptos_round.png','ARBUSDT':'https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-29_21.47.00.jpeg','OPUSDT':'https://assets.coingecko.com/coins/images/25244/small/Optimism.png','PEPEUSDT':'https://assets.coingecko.com/coins/images/29850/small/pepe-token.jpeg','NEARUSDT':'https://assets.coingecko.com/coins/images/10365/small/near.jpg','INJUSDT':'https://assets.coingecko.com/coins/images/12882/small/Secondary_Symbol.png','FILUSDT':'https://assets.coingecko.com/coins/images/12817/small/filecoin.png','RENDERUSDT':'https://assets.coingecko.com/coins/images/11636/small/rndr.png','FETUSDT':'https://assets.coingecko.com/coins/images/5681/small/Fetch.jpg','WIFUSDT':'https://assets.coingecko.com/coins/images/33566/small/dogwifhat.jpg','AAVEUSDT':'https://assets.coingecko.com/coins/images/12645/small/AAVE.png','SHIBUSDT':'https://assets.coingecko.com/coins/images/11939/small/shiba.png','TRXUSDT':'https://assets.coingecko.com/coins/images/1094/small/tron-logo.png','ALGOUSDT':'https://assets.coingecko.com/coins/images/4380/small/download.png'
+            'BTCUSDT':'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
+            'ETHUSDT':'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+            'SOLUSDT':'https://assets.coingecko.com/coins/images/4128/small/solana.png',
+            'XRPUSDT':'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
+            'ADAUSDT':'https://assets.coingecko.com/coins/images/975/small/cardano.png',
+            'DOGEUSDT':'https://assets.coingecko.com/coins/images/5/small/dogecoin.png',
+            'AVAXUSDT':'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png',
+            'LINKUSDT':'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png',
+            'BNBUSDT':'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png',
+            'TONUSDT':'https://assets.coingecko.com/coins/images/17980/small/ton_symbol.png',
+            'SUIUSDT':'https://assets.coingecko.com/coins/images/26375/small/sui_asset.jpeg',
+            'APTUSDT':'https://assets.coingecko.com/coins/images/26455/small/aptos_round.png',
+            'ARBUSDT':'https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-29_21.47.00.jpeg',
+            'NEARUSDT':'https://assets.coingecko.com/coins/images/10365/small/near.jpg',
+            'INJUSDT':'https://assets.coingecko.com/coins/images/12882/small/Secondary_Symbol.png',
+            'PEPEUSDT':'https://assets.coingecko.com/coins/images/29850/small/pepe-token.jpeg',
+            'SEIUSDT':'https://assets.coingecko.com/coins/images/28205/small/Sei_Logo_-_Transparent.png',
+            'ETCUSDT':'https://assets.coingecko.com/coins/images/453/small/ethereum-classic-logo.png',
+            'AAVEUSDT':'https://assets.coingecko.com/coins/images/12645/small/AAVE.png',
+            'ATOMUSDT':'https://assets.coingecko.com/coins/images/1481/small/cosmos_hub.png',
+            'DOTUSDT':'https://assets.coingecko.com/coins/images/12171/small/polkadot.png',
+            'LTCUSDT':'https://assets.coingecko.com/coins/images/2/small/litecoin.png',
+            'MATICUSDT':'https://assets.coingecko.com/coins/images/4713/small/polygon.png',
+            'FILUSDT':'https://assets.coingecko.com/coins/images/12817/small/filecoin.png',
+            'OPUSDT':'https://assets.coingecko.com/coins/images/25244/small/Optimism.png',
+            'TRXUSDT':'https://assets.coingecko.com/coins/images/1094/small/tron-logo.png',
         };
         const COIN_NAMES = {
-            'BTCUSDT':'Bitcoin','ETHUSDT':'Ethereum','SOLUSDT':'Solana','XRPUSDT':'XRP','ADAUSDT':'Cardano','DOGEUSDT':'Dogecoin','AVAXUSDT':'Avalanche','LINKUSDT':'Chainlink','DOTUSDT':'Polkadot','MATICUSDT':'Polygon','LTCUSDT':'Litecoin','UNIUSDT':'Uniswap','XLMUSDT':'Stellar','ATOMUSDT':'Cosmos','ALGOUSDT':'Algorand','BNBUSDT':'BNB','TRXUSDT':'TRON','AAVEUSDT':'Aave','SHIBUSDT':'Shiba Inu','NEARUSDT':'NEAR','SUIUSDT':'Sui','APTUSDT':'Aptos','FILUSDT':'Filecoin','OPUSDT':'Optimism','ARBUSDT':'Arbitrum','PEPEUSDT':'Pepe','WIFUSDT':'dogwifhat','FETUSDT':'Fetch.ai','RENDERUSDT':'Render','INJUSDT':'Injective'
+            'BTCUSDT':'Bitcoin','ETHUSDT':'Ethereum','SOLUSDT':'Solana','XRPUSDT':'XRP',
+            'ADAUSDT':'Cardano','DOGEUSDT':'Dogecoin','AVAXUSDT':'Avalanche','LINKUSDT':'Chainlink',
+            'BNBUSDT':'BNB','TONUSDT':'Toncoin','SUIUSDT':'Sui','APTUSDT':'Aptos',
+            'ARBUSDT':'Arbitrum','NEARUSDT':'NEAR','INJUSDT':'Injective','PEPEUSDT':'Pepe',
+            'SEIUSDT':'Sei','ETCUSDT':'Ethereum Classic','AAVEUSDT':'Aave','ATOMUSDT':'Cosmos',
+            'DOTUSDT':'Polkadot','LTCUSDT':'Litecoin','MATICUSDT':'Polygon','FILUSDT':'Filecoin',
+            'OPUSDT':'Optimism','TRXUSDT':'TRON',
         };
 
-        const btn=document.getElementById('getBtn'),loading=document.getElementById('loading'),coins=document.getElementById('coins'),errorBanner=document.getElementById('errorBanner'),toggleInfo=document.getElementById('toggleInfo'),modalOverlay=document.getElementById('modalOverlay'),halfModal=document.getElementById('halfModal'),halfModalContent=document.getElementById('halfModalContent'),halfModalClose=document.getElementById('halfModalClose'),watchedSection=document.getElementById('watchedSection'),watchedList=document.getElementById('watchedList'),toggleWatched=document.getElementById('toggleWatched'),watchedCount=document.getElementById('watchedCount');
+        // ===== SIMÜLASYON VERİLERİ (önizleme için) =====
+        const MOCK_SIGNALS = [
+            { symbol:'BTCUSDT', mode:'CONFIRMED', direction:'LONG', confidence:78, entryRefPrice:69452.02, tpPrice:71180.50, slPrice:68300.00, meta:{rr:2.0,price_precision:2}, reasons:['UPTREND_RSI_OK','TREND=UP','MOM=STRONG','ATR_TPSL'], warnings:[] },
+            { symbol:'ETHUSDT', mode:'PREVIEW', direction:'SHORT', confidence:72, entryRefPrice:2854.25, tpPrice:2720.40, slPrice:2943.60, meta:{rr:1.5,price_precision:2}, reasons:['RSI_OVERBOUGHT_IN_UPTREND','TREND=UP','MOM=MED','ATR_TPSL'], warnings:['FUNDING_RATE_HIGH'] },
+            { symbol:'SOLUSDT', mode:'PREVIEW', direction:'LONG', confidence:65, entryRefPrice:142.35, tpPrice:149.80, slPrice:137.38, meta:{rr:1.5,price_precision:2}, reasons:['SIDE_BULL_BIAS','TREND=SIDE','MOM=WEAK','ATR_TPSL'], warnings:[] },
+            { symbol:'XRPUSDT', mode:'CONFIRMED', direction:'SHORT', confidence:75, entryRefPrice:2.4820, tpPrice:2.3150, slPrice:2.5930, meta:{rr:1.5,price_precision:4}, reasons:['DOWNTREND_RSI_OK','TREND=DOWN','MOM=STRONG','ATR_TPSL'], warnings:['LIQ_INTENSITY_MED','LIQ_ALIGNS_WITH_SIGNAL'] },
+            { symbol:'DOGEUSDT', mode:'PREVIEW', direction:'LONG', confidence:63, entryRefPrice:0.0959, tpPrice:0.1012, slPrice:0.0918, meta:{rr:1.3,price_precision:4}, reasons:['SIDE_BULL_BIAS','TREND=SIDE','MOM=WEAK','ATR_TPSL'], warnings:['FUNDING_RATE_HIGH'] },
+        ];
+
+        // ===== DOM =====
+        const btn=document.getElementById('getBtn'),loading=document.getElementById('loading'),coins=document.getElementById('coins'),errorBanner=document.getElementById('errorBanner'),signalInfo=document.getElementById('signalInfo'),toggleInfo=document.getElementById('toggleInfo'),modalOverlay=document.getElementById('modalOverlay'),halfModal=document.getElementById('halfModal'),halfModalContent=document.getElementById('halfModalContent'),halfModalClose=document.getElementById('halfModalClose'),watchedSection=document.getElementById('watchedSection'),watchedList=document.getElementById('watchedList'),toggleWatched=document.getElementById('toggleWatched'),watchedCount=document.getElementById('watchedCount');
         let watchedPositions=JSON.parse(localStorage.getItem('watchedPositions')||'[]');
 
+        // ===== MODAL =====
         function openHalfModal(){const s=document.getElementById('sidebar');if(s)halfModalContent.innerHTML=s.innerHTML;modalOverlay.classList.add('active');halfModal.classList.add('active');}
         function closeHalfModal(){modalOverlay.classList.remove('active');halfModal.classList.remove('active');}
-        toggleInfo.addEventListener('click',openHalfModal);
+        if(toggleInfo)toggleInfo.addEventListener('click',openHalfModal);
         if(halfModalClose)halfModalClose.addEventListener('click',closeHalfModal);
         if(modalOverlay)modalOverlay.addEventListener('click',closeHalfModal);
-        toggleWatched.addEventListener('click',()=>{if(watchedList.style.display==='none'){watchedList.style.display='block';toggleWatched.textContent='Gizle';}else{watchedList.style.display='none';toggleWatched.textContent='Göster';}});
+        if(toggleWatched)toggleWatched.addEventListener('click',()=>{if(watchedList.style.display==='none'){watchedList.style.display='block';toggleWatched.textContent='Gizle';}else{watchedList.style.display='none';toggleWatched.textContent='Göster';}});
 
-        function formatPrice(p){if(!p||!Number.isFinite(p))return'—';if(p<0.001)return p.toFixed(8);if(p<0.01)return p.toFixed(6);if(p<1)return p.toFixed(4);if(p<10)return p.toFixed(3);return p.toFixed(2);}
-        function symbolToTicker(s){return s.replace(/USDT$/,'').replace(/BUSD$/,'').replace(/USDC$/,'');}
+        // ===== HELPERS =====
+        function formatPrice(p,precision){
+            if(!p||!Number.isFinite(p))return'—';
+            if(precision!=null&&Number.isFinite(precision)){
+                const d=Math.max(0,Math.min(8,Math.round(precision)));
+                return p.toFixed(d);
+            }
+            if(p>=10000)return p.toFixed(0);
+            if(p>=100)return p.toFixed(1);
+            if(p>=1)return p.toFixed(2);
+            if(p>=0.01)return p.toFixed(4);
+            return p.toFixed(6);
+        }
+        function smartPrecision(p){if(!p||p<=0)return 2;if(p>=1000)return 0;if(p>=100)return 1;if(p>=1)return 2;if(p>=0.01)return 4;return 6;}
+        function symbolToTicker(s){return s.replace(/USDT$/,'').replace(/BUSD$/,'').replace(/USDC$/,'').replace(/FDUSD$/,'').replace(/TUSD$/,'');}
         function getConfLabel(c){if(c>=75)return'Yüksek';if(c>=68)return'Orta-Yüksek';if(c>=60)return'Orta';return'Düşük';}
         function getTimeEst(c){if(c>=75)return'15-45 dk';if(c>=68)return'30-60 dk';return'30-90 dk';}
 
@@ -242,31 +300,61 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
             if(main)parts.push(map[main]);
             return parts.join(' · ')||reasons.slice(0,2).join(' · ');
         }
-        function warningsToTR(w){if(!w||!w.length)return[];const m={'LIQ_INTENSITY_HIGH':'Yoğun likidasyon','LIQ_INTENSITY_MED':'Orta likidasyon','LIQ_INTENSITY_LOW':'Hafif likidasyon','LIQ_ALIGNS_WITH_SIGNAL':'Liq sinyalle uyumlu','FUNDING_SOON_HIGH_RATE':'Funding yaklaşıyor!'};return w.map(x=>m[x]||x);}
+        function warningsToTR(w){
+            if(!w||!w.length)return[];
+            const m={
+                'LIQ_INTENSITY_HIGH':'🔴 Yoğun likidasyon baskısı',
+                'LIQ_INTENSITY_MED':'🟠 Orta likidasyon baskısı',
+                'LIQ_INTENSITY_LOW':'🟡 Hafif likidasyon',
+                'LIQ_ALIGNS_WITH_SIGNAL':'✅ Likidasyon sinyalle uyumlu',
+                'FUNDING_SOON_HIGH_RATE':'⏰ Funding ücreti yaklaşıyor',
+                'FUNDING_RATE_HIGH':'💰 Funding oranı yüksek (pozisyon tutma maliyetli)'
+            };
+            return w.map(x=>m[x]||x);
+        }
         function showError(msg){errorBanner.textContent=msg;errorBanner.style.display='block';setTimeout(()=>{errorBanner.style.display='none';},8000);}
 
-        async function fetchSignals(mode='intrabar'){const r=await fetch(`${API_BASE}?mode=${mode}`);const d=await r.json();if(!d.ok)throw new Error(d.error||'Backend hatası');return d;}
-        async function requestConfirm(symbol){const r=await fetch(`${API_BASE}?mode=wait_close`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol})});return await r.json();}
+        // ===== API =====
+        async function fetchSignals(mode='intrabar'){
+            const r=await fetch(`${API_BASE}?mode=${mode}`);
+            const d=await r.json();
+            if(!d.ok)throw new Error(d.error||'Backend hatası');
+            return d;
+        }
+        async function requestConfirm(symbol){
+            const r=await fetch(`${API_BASE}?mode=wait_close`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol})});
+            return await r.json();
+        }
 
+        // ===== ANA FONKSİYON =====
         btn.addEventListener('click',getSignals);
 
         async function getSignals(){
-            btn.disabled=true;loading.style.display='block';coins.innerHTML='';errorBanner.style.display='none';
+            btn.disabled=true;loading.style.display='block';coins.innerHTML='';errorBanner.style.display='none';signalInfo.style.display='none';
             try{
-                console.log('📡 Backend API çağrılıyor...');
                 const data=await fetchSignals('intrabar');
-                console.log('✅ Backend yanıtı:',data);
-                const signals=data.signals||[];
+                let signals=data.signals||[];
                 if(data.errors&&data.errors.length)console.warn('⚠️ Backend hataları:',data.errors);
+
+                // Güvene göre sırala ve max 5 göster
+                signals.sort((a,b)=>(b.confidence||0)-(a.confidence||0));
+                const total=signals.length;
+                signals=signals.slice(0,MAX_SIGNALS);
+
                 if(signals.length===0){
                     coins.innerHTML=`<div class="empty-state"><div style="font-size:3rem;margin-bottom:10px;">📊</div><h3>Şu An Yeni Öneri Yok</h3><p>Tüm coinler ya cooldown'da ya da %60 altı güven seviyesinde.</p><p style="color:var(--text-tertiary);font-size:0.8rem;margin-top:8px;">${data.ms?`Analiz: ${data.ms}ms`:''} ${data.errors?.length?`· ${data.errors.length} hata`:''}</p></div>`;
-                }else{displaySignals(signals);}
+                } else {
+                    signalInfo.innerHTML=`<strong>${signals.length}</strong> / ${total} sinyal gösteriliyor (en yüksek güven) · ${data.ms?`${(data.ms/1000).toFixed(1)}s`:''}`;
+                    signalInfo.style.display='inline-flex';
+                    displaySignals(signals);
+                }
             }catch(error){
                 console.error('❌ API Hatası:',error);showError('API Hatası: '+error.message);
                 coins.innerHTML=`<div class="empty-state"><div style="font-size:3rem;margin-bottom:10px;">⚠️</div><h3>Bağlantı Hatası</h3><p>${error.message}</p><p style="color:var(--text-tertiary);font-size:0.8rem;margin-top:8px;">Backend'in çalıştığından ve env variable'ların doğru olduğundan emin olun.</p></div>`;
             }finally{loading.style.display='none';btn.disabled=false;}
         }
 
+        // ===== KART RENDER =====
         function displaySignals(signals){
             coins.innerHTML='';
             signals.forEach((sig,i)=>{
@@ -284,13 +372,15 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
                 const entry=sig.entryRefPrice;
                 const tp=sig.tpPrice;
                 const sl=sig.slPrice;
+                const pp=sig.meta?.price_precision!=null?Number(sig.meta.price_precision):smartPrecision(entry);
                 const profitPct=entry>0?Math.abs((tp-entry)/entry*100):0;
                 const lossPct=entry>0?Math.abs((sl-entry)/entry*100):0;
-                const profitLev=(profitPct*20).toFixed(0);
-                const lossLev=(lossPct*20).toFixed(0);
+                const profitLev=Math.round(profitPct*20);
+                const lossLev=Math.round(lossPct*20);
                 const reasonText=reasonsToText(sig.reasons);
                 const warnings=warningsToTR(sig.warnings);
                 const isPreview=sig.mode==='PREVIEW';
+                const isConfirmed=sig.mode==='CONFIRMED';
 
                 const tR=(sig.reasons||[]).find(r=>r.startsWith('TREND='));
                 const mR=(sig.reasons||[]).find(r=>r.startsWith('MOM='));
@@ -298,62 +388,109 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
                 const momTR={'STRONG':'Güçlü','MED':'Orta','WEAK':'Zayıf'}[mR?mR.split('=')[1]:'']||'';
 
                 card.className=`coin-card ${isHighRR?'high-rr':''}`;
-                card.style.animationDelay=`${i*0.1}s`;
-                const watchId=`w${i}${Date.now()}`,entryId=`e${i}${Date.now()}`,confirmId=`c${i}${Date.now()}`;
+                card.style.animationDelay=`${i*0.08}s`;
+                const uid=`${i}_${Date.now()}`;
+                const watchId=`w${uid}`,entryId=`e${uid}`,confirmId=`c${uid}`;
 
                 card.innerHTML=`
-                    ${isHighRR?`<div class="high-rr-badge">R/R ${rr.toFixed(1)}:1</div>`:''}
+                    ${isHighRR?`<div class="high-rr-badge">⭐ R/R ${rr.toFixed(1)}:1</div>`:''}
                     <button class="watch-btn" id="${watchId}">Takip</button>
                     <div class="coin-header">
                         ${logo?`<img class="coin-logo" src="${logo}" alt="${ticker}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="coin-icon" style="display:none">${ticker.charAt(0)}</div>`:`<div class="coin-icon">${ticker.charAt(0)}</div>`}
-                        <div class="coin-info-col">
+                        <div>
                             <div class="coin-name">${coinName}</div>
-                            <div class="coin-symbol">${ticker} <span class="mode-badge ${isPreview?'mode-preview':'mode-confirmed'}">${isPreview?'PREVIEW':'CONFIRMED'}</span></div>
+                            <div class="coin-symbol">${ticker} <span class="mode-badge ${isPreview?'mode-preview':'mode-confirmed'}">${isPreview?'PREVIEW':isConfirmed?'CONFIRMED':sig.mode}</span></div>
                         </div>
                     </div>
-                    <div class="direction-banner ${isLong?'direction-long':'direction-short'}">${isLong?'LONG':'SHORT'}</div>
+                    <div class="direction-banner ${isLong?'direction-long':'direction-short'}">${isLong?'▲ LONG':'▼ SHORT'}</div>
                     <div class="price-grid">
                         <div class="price-cell">
-                            <div class="price-cell-label">Giriş Fiyatı</div>
-                            <div class="price-cell-value">$${formatPrice(entry)}</div>
+                            <div class="price-cell-label">Şu Anki Fiyat</div>
+                            <div class="price-cell-value">$${formatPrice(entry,pp)}</div>
+                            <div style="font-size:0.65rem;color:var(--text-tertiary);">giriş ref.</div>
                         </div>
                         <div class="price-cell cell-target">
-                            <div class="price-cell-label">Hedef (TP)</div>
-                            <div class="price-cell-value" style="color:var(--green);">$${formatPrice(tp)}</div>
-                            <div style="font-size:0.7rem;color:var(--green);opacity:0.8;">%${profitLev} kar</div>
+                            <div class="price-cell-label">Hedef Fiyat</div>
+                            <div class="price-cell-value" style="color:var(--green);">$${formatPrice(tp,pp)}</div>
+                            <div style="font-size:0.65rem;color:var(--green);opacity:0.8;">%${profitLev} kar</div>
                         </div>
                         <div class="price-cell cell-stop">
                             <div class="price-cell-label">Stop Loss</div>
-                            <div class="price-cell-value" style="color:var(--short);">$${formatPrice(sl)}</div>
-                            <div style="font-size:0.7rem;color:var(--short);opacity:0.8;">-%${lossLev} zarar</div>
+                            <div class="price-cell-value" style="color:var(--short);">$${formatPrice(sl,pp)}</div>
+                            <div style="font-size:0.65rem;color:var(--short);opacity:0.8;">-%${lossLev} zarar</div>
                         </div>
                     </div>
                     ${isHighRR?`<div class="rr-badge high">R/R: ${rr.toFixed(1)}:1</div>`:`<div class="rr-badge normal">R/R: ${rr.toFixed(1)}:1</div>`}
                     <div class="confidence-bar"><div class="confidence-fill" style="width:${conf}%"></div></div>
-                    <div class="info-row"><span class="info-tag">${confLabel} %${conf}</span><span class="info-tag">${timeEst}</span></div>
+                    <div class="info-row"><span class="info-tag">${timeEst}</span><span style="font-size:1rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:${conf>=75?'var(--green)':conf>=68?'var(--purple)':'var(--text-secondary)'};">%${conf} <span style="font-size:0.7rem;font-weight:500;opacity:0.7;">${confLabel}</span></span></div>
                     <div class="trend-row">${trendTR} · ${momTR}</div>
                     <div class="reason-text">${reasonText}</div>
                     ${warnings.length?`<div style="margin-top:4px;">${warnings.map(w=>`<span class="warning-tag">⚠ ${w}</span>`).join('')}</div>`:''}
-                    ${isPreview?`<button class="confirm-btn" id="${confirmId}">Mum Kapanışında Teyit Et</button>`:''}
+                    ${isPreview?`<button class="confirm-btn" id="${confirmId}" title="Sinyal henüz onaylanmadı. Bu butona basarak mum kapandığında tekrar kontrol edilmesini isteyebilirsin.">⏳ Mum Kapanışında Teyit Et</button>`:''}
                     <button class="entry-btn" id="${entryId}">Pozisyona Girdim</button>
                 `;
                 coins.appendChild(card);
 
-                document.getElementById(watchId).addEventListener('click',function(){if(this.classList.contains('watching'))return;addToWatch(sig);this.classList.add('watching');this.textContent='Takipte';});
-                document.getElementById(entryId).addEventListener('click',function(){if(this.classList.contains('entered'))return;const wb=document.getElementById(watchId);if(!wb.classList.contains('watching')){addToWatch(sig);wb.classList.add('watching');wb.textContent='Takipte';}this.classList.add('entered');this.textContent='Pozisyondayım';});
-                if(isPreview){const cb=document.getElementById(confirmId);if(cb){cb.addEventListener('click',async function(){this.disabled=true;this.textContent='Teyit bekleniyor...';try{const res=await requestConfirm(sig.symbol);if(res.ok&&res.result?.ok){this.classList.add('confirmed');this.textContent='✓ Teyit isteği gönderildi';}else{this.textContent='✗ '+(res.result?.reason||'Hata');setTimeout(()=>{this.disabled=false;this.textContent='Tekrar Dene';},3000);}}catch(e){this.textContent='✗ Bağlantı hatası';setTimeout(()=>{this.disabled=false;this.textContent='Tekrar Dene';},3000);}});}}
+                // Event listeners
+                document.getElementById(watchId).addEventListener('click',function(){
+                    if(this.classList.contains('watching'))return;
+                    addToWatch(sig);this.classList.add('watching');this.textContent='✓ Takipte';
+                });
+                document.getElementById(entryId).addEventListener('click',function(){
+                    if(this.classList.contains('entered'))return;
+                    const wb=document.getElementById(watchId);
+                    if(!wb.classList.contains('watching')){addToWatch(sig);wb.classList.add('watching');wb.textContent='✓ Takipte';}
+                    this.classList.add('entered');this.textContent='✓ Pozisyondayım';
+                });
+                if(isPreview){
+                    const cb=document.getElementById(confirmId);
+                    if(cb){cb.addEventListener('click',async function(){
+                        this.disabled=true;this.textContent='Teyit bekleniyor...';
+                        try{
+                            const res=await requestConfirm(sig.symbol);
+                            if(res.ok&&res.result?.ok){this.classList.add('confirmed');this.textContent='✓ Teyit isteği gönderildi';}
+                            else{this.textContent='✗ '+(res.result?.reason||'Hata');setTimeout(()=>{this.disabled=false;this.textContent='Tekrar Dene';},3000);}
+                        }catch(e){this.textContent='✗ Bağlantı hatası';setTimeout(()=>{this.disabled=false;this.textContent='Tekrar Dene';},3000);}
+                    });}
+                }
             });
         }
 
+        // ===== TAKİP SİSTEMİ =====
         function addToWatch(sig){
             const now=new Date(),ticker=symbolToTicker(sig.symbol);
-            watchedPositions.push({name:COIN_NAMES[sig.symbol]||ticker,symbol:ticker,fullSymbol:sig.symbol,type:sig.direction==='LONG'?'buy':'sell',entryPrice:sig.entryRefPrice,currentPrice:sig.entryRefPrice,target:sig.tpPrice,stopLoss:sig.slPrice,confidence:getConfLabel(sig.confidence),confidencePercent:sig.confidence,timeEstimate:getTimeEst(sig.confidence),addedAt:now.toISOString(),addedDate:now.toLocaleDateString('tr-TR'),addedTime:now.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),finalized:false,finalStatus:null,mode:sig.mode});
-            localStorage.setItem('watchedPositions',JSON.stringify(watchedPositions));updateWatchedSection();
+            watchedPositions.push({
+                name:COIN_NAMES[sig.symbol]||ticker,symbol:ticker,fullSymbol:sig.symbol,
+                type:sig.direction==='LONG'?'buy':'sell',
+                entryPrice:sig.entryRefPrice,currentPrice:sig.entryRefPrice,
+                target:sig.tpPrice,stopLoss:sig.slPrice,
+                confidence:getConfLabel(sig.confidence),confidencePercent:sig.confidence,
+                timeEstimate:getTimeEst(sig.confidence),
+                addedAt:now.toISOString(),
+                addedDate:now.toLocaleDateString('tr-TR'),
+                addedTime:now.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),
+                finalized:false,finalStatus:null,mode:sig.mode
+            });
+            localStorage.setItem('watchedPositions',JSON.stringify(watchedPositions));
+            updateWatchedSection();
         }
 
         async function updateWatchedPrices(){
             if(!watchedPositions.length)return;
-            try{const r=await fetch('https://api.binance.com/api/v3/ticker/price');if(r.ok){const d=await r.json();watchedPositions.forEach(p=>{if(p.finalized)return;for(const pair of[p.symbol+'USDT',p.symbol+'BUSD',p.symbol+'USDC']){const t=d.find(x=>x.symbol===pair);if(t){p.currentPrice=parseFloat(t.price);break;}}});localStorage.setItem('watchedPositions',JSON.stringify(watchedPositions));}}catch(e){console.error('Fiyat güncelleme hatası:',e);}
+            try{
+                const r=await fetch('https://api.binance.com/api/v3/ticker/price');
+                if(r.ok){
+                    const d=await r.json();
+                    watchedPositions.forEach(p=>{
+                        if(p.finalized)return;
+                        for(const pair of[p.symbol+'USDT',p.symbol+'BUSD',p.symbol+'USDC']){
+                            const t=d.find(x=>x.symbol===pair);
+                            if(t){p.currentPrice=parseFloat(t.price);break;}
+                        }
+                    });
+                    localStorage.setItem('watchedPositions',JSON.stringify(watchedPositions));
+                }
+            }catch(e){console.error('Fiyat güncelleme hatası:',e);}
         }
 
         function updateWatchedSection(){
@@ -370,22 +507,29 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
                     else if(slh){pos.finalized=true;pos.finalStatus='sl';pos.finalPrice=cp;pos.finalTime=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});localStorage.setItem('watchedPositions',JSON.stringify(watchedPositions));}
                 }else{tr=pos.finalStatus==='tp';slh=pos.finalStatus==='sl';}
                 const dp=pos.finalized?pos.finalPrice:cp;
-                const right=pos.type==='buy'?dp>ep:dp<ep;
                 const pcp=((dp-ep)/ep*100);const plev=pcp*20;
+                const pp=smartPrecision(ep);
                 item.className=`watched-item ${tr?'target-reached':''} ${slh?'stop-loss-hit':''}`;
                 let st='Devam ediyor...',sc='#ffc107';
-                if(slh){st='STOP LOSS VURDU!';sc='#dc3545';}else if(tr){st='HEDEF ULAŞILDI!';sc='#28a745';}else if(!right){st='Ters yönde';sc='#ff9800';}
+                if(slh){st='STOP LOSS VURDU!';sc='#dc3545';}else if(tr){st='HEDEF ULAŞILDI!';sc='#28a745';}else if(pos.type==='buy'?dp<ep:dp>ep){st='Ters yönde';sc='#ff9800';}
                 const ti=pos.addedDate?`${pos.addedDate} ${pos.addedTime}`:'';
-                item.innerHTML=`<div class="watched-header"><span class="watched-name">${pos.name} (${pos.symbol})</span><span class="watched-type ${pos.type}">${pos.type==='buy'?'LONG':'SHORT'}</span></div><div class="watched-info">${ti?`<span style="font-size:0.65rem;color:var(--text-tertiary);">${ti}</span><br>`:''}Giriş: $${formatPrice(ep)} → ${pos.finalized?'Kapanış':'Şu an'}: $${formatPrice(dp)}<br>Hedef: $${formatPrice(tp)} · Stop: $${formatPrice(pos.stopLoss)}<br>Kar/Zarar: ${plev>=0?'+':''}${plev.toFixed(1)}% (x20)${pos.finalized&&pos.finalTime?`<br><span style="font-size:0.65rem;color:var(--text-tertiary);">Kapandı: ${pos.finalTime}</span>`:''}<br><span class="target-status" style="background:${sc};color:#fff;">${st}</span></div><button class="remove-btn" onclick="removeWatched(${idx})">Kaldır</button>`;
+                item.innerHTML=`<div class="watched-header"><span class="watched-name">${pos.name} (${pos.symbol})</span><span class="watched-type ${pos.type}">${pos.type==='buy'?'LONG':'SHORT'} %${pos.confidencePercent||'?'}</span></div><div class="watched-info">${ti?`<span style="font-size:0.65rem;color:var(--text-tertiary);">${ti}</span><br>`:''}Giriş: $${formatPrice(ep,pp)} → ${pos.finalized?'Kapanış':'Şu an'}: $${formatPrice(dp,pp)}<br>Hedef: $${formatPrice(tp,pp)} · Stop: $${formatPrice(pos.stopLoss,pp)}<br>Kar/Zarar: ${plev>=0?'+':''}${plev.toFixed(1)}% (x20)${pos.finalized&&pos.finalTime?`<br><span style="font-size:0.65rem;color:var(--text-tertiary);">Kapandı: ${pos.finalTime}</span>`:''}<br><span class="target-status" style="background:${sc};color:#fff;">${st}</span></div><button class="remove-btn" onclick="removeWatched(${idx})">Kaldır</button>`;
                 watchedList.appendChild(item);
             });
         }
-
         window.removeWatched=function(i){watchedPositions.splice(i,1);localStorage.setItem('watchedPositions',JSON.stringify(watchedPositions));updateWatchedSection();};
 
-        updateWatchedSection();updateWatchedPrices();
+        // ===== BAŞLANGIÇ =====
+        updateWatchedSection();
+        updateWatchedPrices();
         setInterval(()=>{updateWatchedPrices().then(()=>{if(watchedList.style.display!=='none')updateWatchedSection();});},30000);
-        window.addEventListener('load',()=>{setTimeout(getSignals,300);});
+
+        // Sayfa yüklenince SİMÜLASYON verilerini göster (otomatik API çağrısı YOK)
+        window.addEventListener('load',()=>{
+            signalInfo.innerHTML=`<strong>5</strong> / 5 simülasyon sinyali gösteriliyor · <span style="color:var(--purple);">Gerçek veri için "Yeni Öneriler Al" butonuna basın</span>`;
+            signalInfo.style.display='inline-flex';
+            displaySignals(MOCK_SIGNALS);
+        });
     </script>
 </body>
 </html>
