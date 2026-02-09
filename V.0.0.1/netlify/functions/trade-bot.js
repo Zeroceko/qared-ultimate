@@ -14,7 +14,7 @@ const CONFIG = {
 };
 
 // API Anahtarlarını Buraya Gir veya Netlify Panelden Al
-const COINAPI_KEY = "BURAYA_COINAPI_KEY_GELECEK"; 
+const COINAPI_KEY = "287d88ff-ccad-4354-828c-c35310fec621"; 
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || "",
