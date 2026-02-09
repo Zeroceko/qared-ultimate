@@ -208,25 +208,10 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
         </aside>
     </div>
 
-    <script type="module">
+    <script>
         // ===== CONFIG =====
         const API_BASE = '/.netlify/functions/trade-bot';
         const MAX_SIGNALS = 5; // Gösterilecek maksimum sinyal sayısı
-
-        const LEVERAGE = 20;
-
-        // LONG/SHORT'a göre yüzde hareketi hesapla
-        function pctMove(entry, price, direction){
-            if(!Number.isFinite(entry) || !Number.isFinite(price) || entry<=0) return null;
-            const raw = direction === 'SHORT'
-                ? ((entry - price) / entry) * 100
-                : ((price - entry) / entry) * 100;
-            return raw;
-        }
-        function levPnlPct(rawPct){
-            if(rawPct == null) return null;
-            return rawPct * LEVERAGE;
-        }
 
         const COIN_LOGOS = {
             'BTCUSDT':'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
@@ -387,19 +372,11 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
                 const entry=sig.entryRefPrice;
                 const tp=sig.tpPrice;
                 const sl=sig.slPrice;
-                // price_precision: decimal sayısı olmalı; tick size gelirse fallback yap
-                const rawPP = sig.meta?.price_precision;
-                const pp = Number.isInteger(rawPP) ? rawPP : smartPrecision(entry);
-
-                const dir = sig.direction; // LONG | SHORT
-                const rawTp = pctMove(entry, tp, dir);
-                const rawSl = pctMove(entry, sl, dir);
-
-                const levTp = levPnlPct(rawTp);
-                const levSl = levPnlPct(rawSl);
-
-                const tpLabel = (levTp==null || !Number.isFinite(levTp)) ? '—' : `${levTp>=0?'+':''}${levTp.toFixed(0)}% (x${LEVERAGE})`;
-                const slLabel = (levSl==null || !Number.isFinite(levSl)) ? '—' : `${levSl>=0?'+':''}${levSl.toFixed(0)}% (x${LEVERAGE})`;
+                const pp=sig.meta?.price_precision!=null?Number(sig.meta.price_precision):smartPrecision(entry);
+                const profitPct=entry>0?Math.abs((tp-entry)/entry*100):0;
+                const lossPct=entry>0?Math.abs((sl-entry)/entry*100):0;
+                const profitLev=Math.round(profitPct*20);
+                const lossLev=Math.round(lossPct*20);
                 const reasonText=reasonsToText(sig.reasons);
                 const warnings=warningsToTR(sig.warnings);
                 const isPreview=sig.mode==='PREVIEW';
@@ -435,12 +412,12 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
                         <div class="price-cell cell-target">
                             <div class="price-cell-label">Hedef Fiyat</div>
                             <div class="price-cell-value" style="color:var(--green);">$${formatPrice(tp,pp)}</div>
-                            <div style="font-size:0.65rem;color:var(--green);opacity:0.8;">${tpLabel}</div>
+                            <div style="font-size:0.65rem;color:var(--green);opacity:0.8;">%${profitLev} kar</div>
                         </div>
                         <div class="price-cell cell-stop">
                             <div class="price-cell-label">Stop Loss</div>
                             <div class="price-cell-value" style="color:var(--short);">$${formatPrice(sl,pp)}</div>
-                            <div style="font-size:0.65rem;color:var(--short);opacity:0.8;">${slLabel}</div>
+                            <div style="font-size:0.65rem;color:var(--short);opacity:0.8;">-%${lossLev} zarar</div>
                         </div>
                     </div>
                     ${isHighRR?`<div class="rr-badge high">R/R: ${rr.toFixed(1)}:1</div>`:`<div class="rr-badge normal">R/R: ${rr.toFixed(1)}:1</div>`}
@@ -498,24 +475,22 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
             updateWatchedSection();
         }
 
-        async async function updateWatchedPrices(){
-            if(!watchedPositions.length) return;
+        async function updateWatchedPrices(){
+            if(!watchedPositions.length)return;
             try{
-                // Binance spot yerine backend'den gelen referans fiyatı kullan
-                const data = await fetchSignals('intrabar');
-                const signals = data.signals || [];
-                const bySym = new Map(signals.map(s => [s.symbol, s]));
-                watchedPositions.forEach(p=>{
-                    if(p.finalized) return;
-                    const s = bySym.get(p.fullSymbol);
-                    if(s && Number.isFinite(s.entryRefPrice)){
-                        p.currentPrice = Number(s.entryRefPrice);
-                    }
-                });
-                localStorage.setItem('watchedPositions', JSON.stringify(watchedPositions));
-            }catch(e){
-                console.error('Takip fiyat güncelleme hatası:', e);
-            }
+                const r=await fetch('https://api.binance.com/api/v3/ticker/price');
+                if(r.ok){
+                    const d=await r.json();
+                    watchedPositions.forEach(p=>{
+                        if(p.finalized)return;
+                        for(const pair of[p.symbol+'USDT',p.symbol+'BUSD',p.symbol+'USDC']){
+                            const t=d.find(x=>x.symbol===pair);
+                            if(t){p.currentPrice=parseFloat(t.price);break;}
+                        }
+                    });
+                    localStorage.setItem('watchedPositions',JSON.stringify(watchedPositions));
+                }
+            }catch(e){console.error('Fiyat güncelleme hatası:',e);}
         }
 
         function updateWatchedSection(){
@@ -532,15 +507,13 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
                     else if(slh){pos.finalized=true;pos.finalStatus='sl';pos.finalPrice=cp;pos.finalTime=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});localStorage.setItem('watchedPositions',JSON.stringify(watchedPositions));}
                 }else{tr=pos.finalStatus==='tp';slh=pos.finalStatus==='sl';}
                 const dp=pos.finalized?pos.finalPrice:cp;
-                const dir=(pos.type==='sell')?'SHORT':'LONG';
-                const raw=pctMove(ep,dp,dir);
-                const plev=levPnlPct(raw) ?? 0;
+                const pcp=((dp-ep)/ep*100);const plev=pcp*20;
                 const pp=smartPrecision(ep);
                 item.className=`watched-item ${tr?'target-reached':''} ${slh?'stop-loss-hit':''}`;
                 let st='Devam ediyor...',sc='#ffc107';
                 if(slh){st='STOP LOSS VURDU!';sc='#dc3545';}else if(tr){st='HEDEF ULAŞILDI!';sc='#28a745';}else if(pos.type==='buy'?dp<ep:dp>ep){st='Ters yönde';sc='#ff9800';}
                 const ti=pos.addedDate?`${pos.addedDate} ${pos.addedTime}`:'';
-                item.innerHTML=`<div class="watched-header"><span class="watched-name">${pos.name} (${pos.symbol})</span><span class="watched-type ${pos.type}">${pos.type==='buy'?'LONG':'SHORT'} %${pos.confidencePercent||'?'}</span></div><div class="watched-info">${ti?`<span style="font-size:0.65rem;color:var(--text-tertiary);">${ti}</span><br>`:''}Giriş: $${formatPrice(ep,pp)} → ${pos.finalized?'Kapanış':'Şu an'}: $${formatPrice(dp,pp)}<br>Hedef: $${formatPrice(tp,pp)} · Stop: $${formatPrice(pos.stopLoss,pp)}<br>Kar/Zarar: ${plev>=0?'+':''}${plev.toFixed(1)}% (x${LEVERAGE})${pos.finalized&&pos.finalTime?`<br><span style="font-size:0.65rem;color:var(--text-tertiary);">Kapandı: ${pos.finalTime}</span>`:''}<br><span class="target-status" style="background:${sc};color:#fff;">${st}</span></div><button class="remove-btn" onclick="removeWatched(${idx})">Kaldır</button>`;
+                item.innerHTML=`<div class="watched-header"><span class="watched-name">${pos.name} (${pos.symbol})</span><span class="watched-type ${pos.type}">${pos.type==='buy'?'LONG':'SHORT'} %${pos.confidencePercent||'?'}</span></div><div class="watched-info">${ti?`<span style="font-size:0.65rem;color:var(--text-tertiary);">${ti}</span><br>`:''}Giriş: $${formatPrice(ep,pp)} → ${pos.finalized?'Kapanış':'Şu an'}: $${formatPrice(dp,pp)}<br>Hedef: $${formatPrice(tp,pp)} · Stop: $${formatPrice(pos.stopLoss,pp)}<br>Kar/Zarar: ${plev>=0?'+':''}${plev.toFixed(1)}% (x20)${pos.finalized&&pos.finalTime?`<br><span style="font-size:0.65rem;color:var(--text-tertiary);">Kapandı: ${pos.finalTime}</span>`:''}<br><span class="target-status" style="background:${sc};color:#fff;">${st}</span></div><button class="remove-btn" onclick="removeWatched(${idx})">Kaldır</button>`;
                 watchedList.appendChild(item);
             });
         }
@@ -553,11 +526,9 @@ body { font-family: 'Bai Jamjuree', sans-serif; background: var(--blue); min-hei
 
         // Sayfa yüklenince SİMÜLASYON verilerini göster (otomatik API çağrısı YOK)
         window.addEventListener('load',()=>{
-            if(location.hostname === 'localhost'){
-                signalInfo.innerHTML=`<strong>5</strong> / 5 simülasyon sinyali gösteriliyor · <span style="color:var(--purple);">Gerçek veri için "Yeni Öneriler Al" butonuna basın</span>`;
-                signalInfo.style.display='inline-flex';
-                displaySignals(MOCK_SIGNALS);
-            }
+            signalInfo.innerHTML=`<strong>5</strong> / 5 simülasyon sinyali gösteriliyor · <span style="color:var(--purple);">Gerçek veri için "Yeni Öneriler Al" butonuna basın</span>`;
+            signalInfo.style.display='inline-flex';
+            displaySignals(MOCK_SIGNALS);
         });
     </script>
 </body>
