@@ -18,7 +18,7 @@ const CONFIG = {
 
 // CoinAPI Configuration
 const COINAPI_BASE = "https://rest.coinapi.io";
-const COINAPI_KEY = process.env.COINAPI_KEY; // Must be set in environment
+const COINAPI_KEY = process.env.COINAPI_KEY || "22800771-49de-40b7-a534-e29f555258d5"; // Must be set in environment
 const COINAPI_EXCHANGE_ID = "BINANCEFTS"; // Binance Futures default in CoinAPI
 
 const redis = Redis.fromEnv();
@@ -396,21 +396,24 @@ export async function handler(event) {
     const symbolMap = buildSymbolMap(symbolsData);
 
     const tasks = watchlist.map(async (shortSymbol) => {
-      const symData = symbolMap.get(shortSymbol);
-      if (!symData) return { id: `ERR|${shortSymbol}`, symbol: shortSymbol, mode: "ERROR", error: "Symbol not found in CoinAPI" };
+      try {
+        const symData = symbolMap.get(shortSymbol);
+        if (!symData) return { id: `ERR|${shortSymbol}`, symbol: shortSymbol, mode: "ERROR", error: "Symbol not found in CoinAPI" };
 
-      const symbolId = symData.symbol_id;
-      const tickSize = symData.price_precision ? String(symData.price_precision) : "0.01";
+        const symbolId = symData.symbol_id;
+        const tickSize = symData.price_precision ? String(symData.price_precision) : "0.01";
 
-      const tickerDaily = await fetchTickerDaily(symbolId);
-      const marketData = await fetchMarketData(symbolId);
+        // These will now throw if they fail
+        const tickerDaily = await fetchTickerDaily(symbolId);
+        const marketData = await fetchMarketData(symbolId);
 
-      if (mode === "close") {
-        return confirmOnCloseForSymbol({ symbol: shortSymbol, symbolId, tickSize, tickerDaily, marketData })
-          .catch((err) => ({ id: `ERR|${shortSymbol}`, symbol: shortSymbol, mode: "ERROR", error: String(err?.message || err) }));
-      } else {
-        return evaluateIntrabarForSymbol({ symbol: shortSymbol, symbolId, tickSize, tickerDaily, marketData })
-          .catch((err) => ({ id: `ERR|${shortSymbol}`, symbol: shortSymbol, mode: "ERROR", error: String(err?.message || err) }));
+        if (mode === "close") {
+          return await confirmOnCloseForSymbol({ symbol: shortSymbol, symbolId, tickSize, tickerDaily, marketData });
+        } else {
+          return await evaluateIntrabarForSymbol({ symbol: shortSymbol, symbolId, tickSize, tickerDaily, marketData });
+        }
+      } catch (err) {
+        return { id: `ERR|${shortSymbol}`, symbol: shortSymbol, mode: "ERROR", error: String(err?.message || err) };
       }
     });
 
