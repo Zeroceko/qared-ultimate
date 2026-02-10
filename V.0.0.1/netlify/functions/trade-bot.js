@@ -64,36 +64,26 @@ async function tryDedupeOrDrop(signalId) { const ok = await redis.set(kDedupe(si
 // --- CoinAPI Data Fetching ---
 
 async function fetchCoinApiSymbols() {
-  try {
-    const { data } = await http.get("/v1/symbols", {
-      params: { filter_exchange_id: COINAPI_EXCHANGE_ID, filter_asset_id: "USDT" }
-    });
-    return data;
-  } catch (err) {
-    console.error("Error fetching symbols:", err.message);
-    return [];
-  }
+  const { data } = await http.get("/v1/symbols", {
+    params: { filter_exchange_id: COINAPI_EXCHANGE_ID, filter_asset_id: "USDT" }
+  });
+  return data;
 }
 
 async function fetchTickerDaily(symbolId) {
-  try {
-    const { data } = await http.get(`/v1/ohlcv/${symbolId}/history`, {
-      params: { period_id: "1DAY", limit: 1 }
-    });
-    if (!data || !data.length) return null;
-    const candle = data[0];
-    return {
-      symbol: symbolId,
-      priceChangePercent: ((candle.price_close - candle.price_open) / candle.price_open) * 100,
-      highPrice: candle.price_high,
-      lowPrice: candle.price_low,
-      lastPrice: candle.price_close,
-      volume: candle.volume_traded
-    };
-  } catch (err) {
-    console.error(`Error fetching ticker for ${symbolId}:`, err.message);
-    return null;
-  }
+  const { data } = await http.get(`/v1/ohlcv/${symbolId}/history`, {
+    params: { period_id: "1DAY", limit: 1 }
+  });
+  if (!data || !data.length) throw new Error(`No daily OHLCV data for ${symbolId}`);
+  const candle = data[0];
+  return {
+    symbol: symbolId,
+    priceChangePercent: ((candle.price_close - candle.price_open) / candle.price_open) * 100,
+    highPrice: candle.price_high,
+    lowPrice: candle.price_low,
+    lastPrice: candle.price_close,
+    volume: candle.volume_traded
+  };
 }
 
 async function fetchMarketData(symbolId) {
@@ -109,15 +99,11 @@ async function fetchMarketData(symbolId) {
 }
 
 async function fetchKlines1h(symbolId, limit) {
-  try {
-    const { data } = await http.get(`/v1/ohlcv/${symbolId}/history`, {
-      params: { period_id: "1HRS", limit: limit }
-    });
-    return data.sort((a, b) => new Date(a.time_period_start) - new Date(b.time_period_start));
-  } catch (err) {
-    console.error(`Error fetching klines for ${symbolId}:`, err.message);
-    return [];
-  }
+  const { data } = await http.get(`/v1/ohlcv/${symbolId}/history`, {
+    params: { period_id: "1HRS", limit: limit }
+  });
+  if (!data || !data.length) throw new Error(`No hourly OHLCV data for ${symbolId}`);
+  return data.sort((a, b) => new Date(a.time_period_start) - new Date(b.time_period_start));
 }
 
 function tickDecimals(tickSize) {
@@ -366,12 +352,12 @@ async function invalidate(symbol, reason) {
 function buildSymbolMap(coinApiSymbols) {
   const map = new Map();
   for (const s of coinApiSymbols) {
-    const parts = s.symbol_id.split('_');
-    const base = parts.length >= 3 ? parts[2] : "";
-    const quote = parts.length >= 4 ? parts[3] : "";
-    if (base && quote) {
+    // Use asset_id fields for robust matching
+    const base = s.asset_id_base || "";
+    const quote = s.asset_id_quote || "";
+    if (base && quote && s.symbol_type === "PERPETUAL") {
       const shortName = `${base}${quote}`;
-      map.set(shortName, s);
+      if (!map.has(shortName)) map.set(shortName, s);
     }
   }
   return map;
@@ -393,7 +379,9 @@ export async function handler(event) {
 
   try {
     const symbolsData = await fetchCoinApiSymbols();
+    if (!symbolsData || !symbolsData.length) return json(500, { ok: false, error: `CoinAPI returned 0 symbols. Check API key.`, ms: nowMs() - t0 });
     const symbolMap = buildSymbolMap(symbolsData);
+    const matchedCount = watchlist.filter(s => symbolMap.has(s)).length;
 
     const tasks = watchlist.map(async (shortSymbol) => {
       try {
@@ -419,7 +407,7 @@ export async function handler(event) {
 
     const results = await Promise.all(tasks);
 
-    return json(200, { ok: true, mode, signals: results.filter((x) => x && x.mode !== "ERROR"), errors: results.filter((x) => x && x.mode === "ERROR"), ms: nowMs() - t0 });
+    return json(200, { ok: true, mode, watchlist, symbolCount: symbolsData.length, matchedCount, signals: results.filter((x) => x && x.mode !== "ERROR" && x.mode !== "INVALIDATED"), errors: results.filter((x) => x && x.mode === "ERROR"), ms: nowMs() - t0 });
 
   } catch (e) { return json(500, { ok: false, error: String(e?.message || e), ms: nowMs() - t0 }); }
 }
