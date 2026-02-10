@@ -4,7 +4,7 @@ import { RSI, MACD, BollingerBands, ATR } from "technicalindicators";
 import { Redis } from "@upstash/redis";
 
 const CONFIG = {
-  MIN_CONF_SHOW: 60, MIN_CONF_CONFIRMED: 60,
+  MIN_CONF_SHOW: 0, MIN_CONF_CONFIRMED: 60,
   COOLDOWN_CONFIRMED_MIN: 30, COOLDOWN_INVALIDATED_MIN: 15,
   ATR_PERIOD: 14, SL_ATR_MULT_LOW: 2.0, SL_ATR_MULT_HIGH: 3.0,
   RR_BASE: 1.5, RR_HIGH: 2.0, MIN_SL_BPS: 10, MIN_TP_BPS: 15,
@@ -78,7 +78,7 @@ async function fetchCoinApiSymbols() {
 async function fetchTickerDaily(symbolId) {
   try {
     const { data } = await http.get(`/v1/ohlcv/${symbolId}/history`, {
-      params: { period_id: "1DAY", limit: 1 } 
+      params: { period_id: "1DAY", limit: 1 }
     });
     if (!data || !data.length) return null;
     const candle = data[0];
@@ -98,11 +98,11 @@ async function fetchTickerDaily(symbolId) {
 
 async function fetchMarketData(symbolId) {
   try {
-     return {
-       markPrice: 0, 
-       lastFundingRate: 0,
-       nextFundingTime: 0
-     };
+    return {
+      markPrice: 0,
+      lastFundingRate: 0,
+      nextFundingTime: 0
+    };
   } catch (err) {
     return { markPrice: 0, lastFundingRate: 0, nextFundingTime: 0 };
   }
@@ -121,7 +121,7 @@ async function fetchKlines1h(symbolId, limit) {
 }
 
 function tickDecimals(tickSize) {
-  if (!tickSize) return 2; 
+  if (!tickSize) return 2;
   const s = String(tickSize);
   if (!s.includes(".")) return 0;
   return s.split(".")[1].replace(/0+$/, "").length;
@@ -187,7 +187,7 @@ function classifyTrend(tickerDaily, ind) {
   let base = "SIDE";
   if (chg > CONFIG.TREND_UP_PCT) base = "UP";
   else if (chg < CONFIG.TREND_DN_PCT) base = "DOWN";
-  
+
   let score = 0;
   if (base === "UP") score += 2;
   if (base === "DOWN") score -= 2;
@@ -265,7 +265,7 @@ function makeConfirmedId(symbol, direction, candleCloseTimeMs) { return `CONFIRM
 async function evaluateIntrabarForSymbol({ symbol, symbolId, tickSize, tickerDaily, marketData }) {
   const st = await getState(symbol); if (nowMs() < st.cooldown_until_ts) return null;
   if (!tickerDaily) return null;
-  
+
   const krows = await fetchKlines1h(symbolId, CONFIG.KLINE_LIMIT);
   const c = parseCandleRows(krows);
 
@@ -274,7 +274,7 @@ async function evaluateIntrabarForSymbol({ symbol, symbolId, tickSize, tickerDai
 
   const trend = classifyTrend(tickerDaily, ind); const momentum = computeMomentum(ind); const cand = directionCandidate(trend, ind);
   if (cand.dir === "NO_TRADE") return null;
-  
+
   let direction = cand.dir, isReversal = false;
   if (cand.dir === "LONG_CANDIDATE") { direction = "LONG"; isReversal = true; } else if (cand.dir === "SHORT_CANDIDATE") { direction = "SHORT"; isReversal = true; }
 
@@ -282,26 +282,26 @@ async function evaluateIntrabarForSymbol({ symbol, symbolId, tickSize, tickerDai
   const liq = await getLiquidationFromRedis(symbol);
   const liqAdj = applyLiquidationAdjustments(direction, conf, liq); conf = liqAdj.confidence; if (liqAdj.veto) return null; if (conf < CONFIG.MIN_CONF_SHOW) return null;
 
-  const entry = Number(tickerDaily.lastPrice); 
+  const entry = Number(tickerDaily.lastPrice);
   if (!(entry > 0)) return null;
 
-  const warnings = [...liqAdj.warnings]; 
+  const warnings = [...liqAdj.warnings];
   if (marketData.nextFundingTime > 0) {
-      const nextFundingMs = Number(marketData.nextFundingTime); 
-      const lastFundingRate = Number(marketData.lastFundingRate);
-      if (Number.isFinite(nextFundingMs) && minutesTo(nextFundingMs) <= CONFIG.FUNDING_WARN_MINUTES && Math.abs(lastFundingRate) >= CONFIG.FUNDING_RATE_ABS_WARN) { warnings.push("FUNDING_SOON_HIGH_RATE"); }
+    const nextFundingMs = Number(marketData.nextFundingTime);
+    const lastFundingRate = Number(marketData.lastFundingRate);
+    if (Number.isFinite(nextFundingMs) && minutesTo(nextFundingMs) <= CONFIG.FUNDING_WARN_MINUTES && Math.abs(lastFundingRate) >= CONFIG.FUNDING_RATE_ABS_WARN) { warnings.push("FUNDING_SOON_HIGH_RATE"); }
   }
 
   const tpsl = pickTpSlATR({ entry, atr: ind.atr, direction, confidence: conf, momentumStrength: momentum.strength, isReversal, liqIntensity: liq.intensityScore, bbWidthClass: ind.bbWidthClass });
   if (!tpsl) return null;
-  
+
   const rounded = roundSLTP(entry, tpsl.slPrice, tpsl.tpPrice, tickSize, direction);
-  const bucketMs = floorTimeBucket(nowMs(), CONFIG.DEDUPE_SCOPE_SECONDS); 
+  const bucketMs = floorTimeBucket(nowMs(), CONFIG.DEDUPE_SCOPE_SECONDS);
   const sigId = makePreviewId(symbol, direction, bucketMs);
   const deduped = await tryDedupeOrDrop(sigId); if (!deduped) return null;
 
   const signal = { id: sigId, symbol, mode: "PREVIEW", direction, confidence: conf, entryRefPrice: entry, tpPrice: rounded.tpPrice, slPrice: rounded.slPrice, meta: { atr: tpsl.atr, slAtrMult: tpsl.slAtrMult, rr: tpsl.rr, tickSize }, reasons: [cand.reason, `TREND=${trend}`, `MOM=${momentum.strength}`, "ATR_TPSL", "TICK_ROUNDED"], warnings, timestamps: { created: nowMs() }, };
-  
+
   const pendingObj = { signal_id: sigId, direction, created_ts: nowMs(), confirm_requested: false, snapshot_metrics: { momentumScore: momentum.score, bbWidthClass: ind.bbWidthClass, atr: ind.atr, lastCandleCloseTime: ind.lastCandleCloseTime }, };
   await Promise.all([savePending(symbol, pendingObj), saveLastSignal(symbol, { ts: nowMs(), id: sigId, mode: "PREVIEW" })]);
 
@@ -319,7 +319,7 @@ async function confirmOnCloseForSymbol({ symbol, symbolId, tickSize, tickerDaily
 
   const krows = await fetchKlines1h(symbolId, CONFIG.KLINE_LIMIT); const c = parseCandleRows(krows);
   if (c.close.length < CONFIG.ATR_PERIOD + 2) return await invalidate(symbol, "CLOSE_ATR_UNAVAILABLE");
-  
+
   const ind = computeIndicatorsFromCandles(c);
   if (ind.rsi == null || ind.macd == null || ind.bb == null || ind.atr == null) return await invalidate(symbol, "CLOSE_ATR_UNAVAILABLE");
 
@@ -338,10 +338,10 @@ async function confirmOnCloseForSymbol({ symbol, symbolId, tickSize, tickerDaily
 
   const entry = Number(tickerDaily.lastPrice); if (!(entry > 0)) return await invalidate(symbol, "CLOSE_BAD_ENTRY");
 
-  const warnings = [...liqAdj.warnings]; 
+  const warnings = [...liqAdj.warnings];
   if (marketData.nextFundingTime > 0) {
-      const nextFundingMs = Number(marketData.nextFundingTime); const lastFundingRate = Number(marketData.lastFundingRate);
-      if (Number.isFinite(nextFundingMs) && minutesTo(nextFundingMs) <= CONFIG.FUNDING_WARN_MINUTES && Math.abs(lastFundingRate) >= CONFIG.FUNDING_RATE_ABS_WARN) { warnings.push("FUNDING_SOON_HIGH_RATE"); }
+    const nextFundingMs = Number(marketData.nextFundingTime); const lastFundingRate = Number(marketData.lastFundingRate);
+    if (Number.isFinite(nextFundingMs) && minutesTo(nextFundingMs) <= CONFIG.FUNDING_WARN_MINUTES && Math.abs(lastFundingRate) >= CONFIG.FUNDING_RATE_ABS_WARN) { warnings.push("FUNDING_SOON_HIGH_RATE"); }
   }
 
   const tpsl = pickTpSlATR({ entry, atr: ind.atr, direction: directionNow, confidence: conf, momentumStrength: momentum.strength, isReversal: isReversalNow, liqIntensity: liq.intensityScore, bbWidthClass: ind.bbWidthClass });
@@ -370,8 +370,8 @@ function buildSymbolMap(coinApiSymbols) {
     const base = parts.length >= 3 ? parts[2] : "";
     const quote = parts.length >= 4 ? parts[3] : "";
     if (base && quote) {
-       const shortName = `${base}${quote}`;
-       map.set(shortName, s);
+      const shortName = `${base}${quote}`;
+      map.set(shortName, s);
     }
   }
   return map;
@@ -380,7 +380,7 @@ function buildSymbolMap(coinApiSymbols) {
 export async function handler(event) {
   const t0 = nowMs(); const watchlist = parseWatchlist();
   if (!watchlist.length) return json(400, { ok: false, error: "WATCHLIST env is empty." });
-  
+
   if (!COINAPI_KEY) return json(500, { ok: false, error: "COINAPI_KEY is not set." });
 
   const mode = (event.queryStringParameters?.mode || "intrabar").toLowerCase();
@@ -394,28 +394,28 @@ export async function handler(event) {
   try {
     const symbolsData = await fetchCoinApiSymbols();
     const symbolMap = buildSymbolMap(symbolsData);
-    
+
     const tasks = watchlist.map(async (shortSymbol) => {
-        const symData = symbolMap.get(shortSymbol);
-        if (!symData) return { id: `ERR|${shortSymbol}`, symbol: shortSymbol, mode: "ERROR", error: "Symbol not found in CoinAPI" };
-        
-        const symbolId = symData.symbol_id;
-        const tickSize = symData.price_precision ? String(symData.price_precision) : "0.01";
-        
-        const tickerDaily = await fetchTickerDaily(symbolId);
-        const marketData = await fetchMarketData(symbolId);
-        
-        if (mode === "close") {
-            return confirmOnCloseForSymbol({ symbol: shortSymbol, symbolId, tickSize, tickerDaily, marketData })
-                .catch((err) => ({ id: `ERR|${shortSymbol}`, symbol: shortSymbol, mode: "ERROR", error: String(err?.message || err) }));
-        } else {
-             return evaluateIntrabarForSymbol({ symbol: shortSymbol, symbolId, tickSize, tickerDaily, marketData })
-                .catch((err) => ({ id: `ERR|${shortSymbol}`, symbol: shortSymbol, mode: "ERROR", error: String(err?.message || err) }));
-        }
+      const symData = symbolMap.get(shortSymbol);
+      if (!symData) return { id: `ERR|${shortSymbol}`, symbol: shortSymbol, mode: "ERROR", error: "Symbol not found in CoinAPI" };
+
+      const symbolId = symData.symbol_id;
+      const tickSize = symData.price_precision ? String(symData.price_precision) : "0.01";
+
+      const tickerDaily = await fetchTickerDaily(symbolId);
+      const marketData = await fetchMarketData(symbolId);
+
+      if (mode === "close") {
+        return confirmOnCloseForSymbol({ symbol: shortSymbol, symbolId, tickSize, tickerDaily, marketData })
+          .catch((err) => ({ id: `ERR|${shortSymbol}`, symbol: shortSymbol, mode: "ERROR", error: String(err?.message || err) }));
+      } else {
+        return evaluateIntrabarForSymbol({ symbol: shortSymbol, symbolId, tickSize, tickerDaily, marketData })
+          .catch((err) => ({ id: `ERR|${shortSymbol}`, symbol: shortSymbol, mode: "ERROR", error: String(err?.message || err) }));
+      }
     });
 
     const results = await Promise.all(tasks);
-    
+
     return json(200, { ok: true, mode, signals: results.filter((x) => x && x.mode !== "ERROR"), errors: results.filter((x) => x && x.mode === "ERROR"), ms: nowMs() - t0 });
 
   } catch (e) { return json(500, { ok: false, error: String(e?.message || e), ms: nowMs() - t0 }); }
