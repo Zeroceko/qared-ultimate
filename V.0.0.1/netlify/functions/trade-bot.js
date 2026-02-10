@@ -4,7 +4,7 @@ import { RSI, MACD, BollingerBands, ATR } from "technicalindicators";
 import { Redis } from "@upstash/redis";
 
 const CONFIG = {
-  MIN_CONF_SHOW: 0, MIN_CONF_CONFIRMED: 60,
+  MIN_CONF_SHOW: 0, MIN_CONF_CONFIRMED: 0,
   COOLDOWN_CONFIRMED_MIN: 30, COOLDOWN_INVALIDATED_MIN: 15,
   ATR_PERIOD: 14, SL_ATR_MULT_LOW: 2.0, SL_ATR_MULT_HIGH: 3.0,
   RR_BASE: 1.5, RR_HIGH: 2.0, MIN_SL_BPS: 10, MIN_TP_BPS: 15,
