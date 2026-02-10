@@ -249,27 +249,33 @@ function makePreviewId(symbol, direction, bucketMs) { return `PREVIEW|${symbol}|
 function makeConfirmedId(symbol, direction, candleCloseTimeMs) { return `CONFIRMED|${symbol}|${direction}|${candleCloseTimeMs}`; }
 
 async function evaluateIntrabarForSymbol({ symbol, symbolId, tickSize, tickerDaily, marketData }) {
-  const st = await getState(symbol); if (nowMs() < st.cooldown_until_ts) return null;
-  if (!tickerDaily) return null;
+  // Skip cooldown check temporarily for debugging
+  // const st = await getState(symbol); if (nowMs() < st.cooldown_until_ts) return null;
+  if (!tickerDaily) return { id: `SKIP|${symbol}`, symbol, mode: "PREVIEW", direction: "NONE", confidence: 0, entryRefPrice: 0, reasons: ["NO_TICKER_DATA"], warnings: [], timestamps: { created: nowMs() } };
 
   const krows = await fetchKlines1h(symbolId, CONFIG.KLINE_LIMIT);
   const c = parseCandleRows(krows);
 
-  if (c.close.length < CONFIG.ATR_PERIOD + 2) return null; const ind = computeIndicatorsFromCandles(c);
-  if (ind.rsi == null || ind.macd == null || ind.bb == null || ind.atr == null) return null;
+  if (c.close.length < CONFIG.ATR_PERIOD + 2) return { id: `SKIP|${symbol}`, symbol, mode: "PREVIEW", direction: "NONE", confidence: 0, entryRefPrice: Number(tickerDaily.lastPrice), reasons: [`INSUFFICIENT_DATA_${c.close.length}_candles`], warnings: [], timestamps: { created: nowMs() } };
+
+  const ind = computeIndicatorsFromCandles(c);
+  if (ind.rsi == null || ind.macd == null || ind.bb == null || ind.atr == null) return { id: `SKIP|${symbol}`, symbol, mode: "PREVIEW", direction: "NONE", confidence: 0, entryRefPrice: Number(tickerDaily.lastPrice), reasons: ["INDICATORS_NULL"], warnings: [], timestamps: { created: nowMs() } };
 
   const trend = classifyTrend(tickerDaily, ind); const momentum = computeMomentum(ind); const cand = directionCandidate(trend, ind);
-  if (cand.dir === "NO_TRADE") return null;
 
   let direction = cand.dir, isReversal = false;
   if (cand.dir === "LONG_CANDIDATE") { direction = "LONG"; isReversal = true; } else if (cand.dir === "SHORT_CANDIDATE") { direction = "SHORT"; isReversal = true; }
 
+  if (cand.dir === "NO_TRADE") {
+    return { id: `SKIP|${symbol}`, symbol, mode: "PREVIEW", direction: "NONE", confidence: 0, entryRefPrice: Number(tickerDaily.lastPrice), reasons: [cand.reason, `TREND=${trend}`, `MOM=${momentum.strength}`, "NO_TRADE_EDGE"], warnings: [], timestamps: { created: nowMs() } };
+  }
+
   let conf = baseConfidence(trend, momentum, tickerDaily);
   const liq = await getLiquidationFromRedis(symbol);
-  const liqAdj = applyLiquidationAdjustments(direction, conf, liq); conf = liqAdj.confidence; if (liqAdj.veto) return null; if (conf < CONFIG.MIN_CONF_SHOW) return null;
+  const liqAdj = applyLiquidationAdjustments(direction, conf, liq); conf = liqAdj.confidence;
 
   const entry = Number(tickerDaily.lastPrice);
-  if (!(entry > 0)) return null;
+  if (!(entry > 0)) return { id: `SKIP|${symbol}`, symbol, mode: "PREVIEW", direction, confidence: conf, entryRefPrice: 0, reasons: ["BAD_ENTRY_PRICE"], warnings: [], timestamps: { created: nowMs() } };
 
   const warnings = [...liqAdj.warnings];
   if (marketData.nextFundingTime > 0) {
@@ -279,17 +285,22 @@ async function evaluateIntrabarForSymbol({ symbol, symbolId, tickSize, tickerDai
   }
 
   const tpsl = pickTpSlATR({ entry, atr: ind.atr, direction, confidence: conf, momentumStrength: momentum.strength, isReversal, liqIntensity: liq.intensityScore, bbWidthClass: ind.bbWidthClass });
-  if (!tpsl) return null;
+  if (!tpsl) return { id: `SKIP|${symbol}`, symbol, mode: "PREVIEW", direction, confidence: conf, entryRefPrice: entry, reasons: ["ATR_TPSL_FAILED"], warnings, timestamps: { created: nowMs() } };
 
   const rounded = roundSLTP(entry, tpsl.slPrice, tpsl.tpPrice, tickSize, direction);
   const bucketMs = floorTimeBucket(nowMs(), CONFIG.DEDUPE_SCOPE_SECONDS);
   const sigId = makePreviewId(symbol, direction, bucketMs);
-  const deduped = await tryDedupeOrDrop(sigId); if (!deduped) return null;
+  // Skip dedupe for debugging - always show signals
+  // const deduped = await tryDedupeOrDrop(sigId); if (!deduped) return null;
 
   const signal = { id: sigId, symbol, mode: "PREVIEW", direction, confidence: conf, entryRefPrice: entry, tpPrice: rounded.tpPrice, slPrice: rounded.slPrice, meta: { atr: tpsl.atr, slAtrMult: tpsl.slAtrMult, rr: tpsl.rr, tickSize }, reasons: [cand.reason, `TREND=${trend}`, `MOM=${momentum.strength}`, "ATR_TPSL", "TICK_ROUNDED"], warnings, timestamps: { created: nowMs() }, };
 
-  const pendingObj = { signal_id: sigId, direction, created_ts: nowMs(), confirm_requested: false, snapshot_metrics: { momentumScore: momentum.score, bbWidthClass: ind.bbWidthClass, atr: ind.atr, lastCandleCloseTime: ind.lastCandleCloseTime }, };
-  await Promise.all([savePending(symbol, pendingObj), saveLastSignal(symbol, { ts: nowMs(), id: sigId, mode: "PREVIEW" })]);
+  try {
+    const pendingObj = { signal_id: sigId, direction, created_ts: nowMs(), confirm_requested: false, snapshot_metrics: { momentumScore: momentum.score, bbWidthClass: ind.bbWidthClass, atr: ind.atr, lastCandleCloseTime: ind.lastCandleCloseTime }, };
+    await Promise.all([savePending(symbol, pendingObj), saveLastSignal(symbol, { ts: nowMs(), id: sigId, mode: "PREVIEW" })]);
+  } catch (redisErr) {
+    signal.warnings.push("REDIS_SAVE_FAILED");
+  }
 
   return signal;
 }
